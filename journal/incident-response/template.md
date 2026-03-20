@@ -1,7 +1,7 @@
-# Incident Report: [Brief and clear title, detailing the issue and resolution]
+# Incident Report: {{TITLE}} [Brief and clear title, detailing the issue and resolution]
 
-**Date of Incident:** $CURRENT_DATE
-**Date of Report:** $CURRENT_DATE
+**Date of Incident:** {{CURRENT_DATE}}
+**Date of Report:** {{CURRENT_DATE}}
 **Status:** [Resolved / Mitigated / Ongoing]
 **Severity:** [Low / Medium / High / Critical]
 **Services Impacted:** [e.g., Main Hypervisor, Storage Array, Jellyfin Media Stack]
