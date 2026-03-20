@@ -13,6 +13,8 @@ Different repositories
 Plaintext Credentials
 Confusion on Secrets Managemnet
 Confusion on name and user management for different repositories
+Ammended history to clean up authorship
+Used Credential Manager Going Forward
 
 [Insert Context Here]
 
