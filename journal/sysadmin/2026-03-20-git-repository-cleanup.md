@@ -1,7 +1,6 @@
+# Sysadmin Log: [Brief, Clear Title - e.g., Decoupling Docker State and IaC]
 
-# Engineering Log: [Brief, Clear Title - e.g., Decoupling Docker State and IaC]
-
-**Date:** 2026-03-20
+**Date:** YYYY-MM-DD
 **Category:** [Architecture / Security / Networking / Storage / Maintenance]
 **Status:** [Proposed / In Progress / Completed / Deprecated]
 
@@ -10,9 +9,20 @@
 ## 1. Context & Problem Statement
 > *What is the current state of the system, and why is it insufficient? Describe the technical debt, security risk, or performance bottleneck you are trying to solve.*
 
+Different repositories
+Plaintext Credentials
+Confusion on Secrets Managemnet
+Confusion on name and user management for different repositories
+
 [Insert Context Here]
 
 ## 2. Architectural Decisions & Strategy
+
+Separate repositories
+Disable Credential Manager
+Enable libsecret
+Sanitise credentials and review commits to ensure correct names and emails are present
+
 > *What are the proposed solutions? Document the trade-offs you considered and justify why you chose the final path. This proves you think like an engineer, not just a technician.*
 
 * **Decision 1:** [e.g., Implementing a two-repository split for IaC and secrets.]
@@ -35,5 +45,4 @@
 
 ### Next Steps
 - [ ] **Pending:** [e.g., Migrate legacy container data to the new subvolume structure.]
-- [x] **Completed:** [e.g., Drafted and tested the  rsync script.]
-
+- [x] **Completed:** [e.g., Drafted and tested the `deploy.sh` rsync script.]
