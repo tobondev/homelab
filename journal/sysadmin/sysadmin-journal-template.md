@@ -1,6 +1,7 @@
-# Sysadmin Log: [Brief, Clear Title - e.g., Decoupling Docker State and IaC]
+# Sysadmin Log: {{RAW_TITLE}}  [Brief, Clear Title - e.g., Decoupling Docker State and IaC]
 
-**Date:** YYYY-MM-DD
+**Date:** {{CURRENT_DATE}}
+**Report Time:** {{CURRENT_TIME}}
 **Category:** [Architecture / Security / Networking / Storage / Maintenance]
 **Status:** [Proposed / In Progress / Completed / Deprecated]
 

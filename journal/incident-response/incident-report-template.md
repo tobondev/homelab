@@ -1,7 +1,7 @@
 # Incident Report: [Brief and clear title, detailing the issue and resolution]
 
-**Date of Incident:** $(date +%Y-%m-%d)
-**Date of Report:** $(date +%Y-%m-%d)
+**Date of Incident:** {{CURRENT_DATE}}
+**Date of Report:** {{CURRENT_DATE}}
 **Status:** [Resolved / Mitigated / Ongoing]
 **Severity:** [Low / Medium / High / Critical]
 **Services Impacted:** [e.g., Main Hypervisor, Storage Array, Jellyfin Media Stack]
@@ -17,7 +17,7 @@
 > *Use a 24-hour time format to detail the sequence of events. This demonstrates methodical tracking and an understanding of standard log sequencing.*
 
 * **[00:00]** - Incident occurred or was first detected.
-* **[00:00]** - Initial triage and investigation commenced.
+* **[{{CURRENT_TIME}}]** - Initial triage and investigation commenced.
 * **[00:00]** - Attempted [Action A], resulting in [Outcome A].
 * **[00:00]** - System restored to standard operation.
 
