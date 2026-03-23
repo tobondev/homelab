@@ -33,6 +33,9 @@
 * **Execution:** ...
 * **Verification:** ...
 
+<!-- SESSION_LOG_START -->
+<!-- SESSION_LOG_END -->
+
 ## 5. Lessons Learned & Action Items
 > *What are you changing to prevent this from happening again? This is the most critical section for an employer, as it demonstrates continuous improvement.*
 
