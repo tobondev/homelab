@@ -1,0 +1,17 @@
+[
+  {
+    "title": "Server Lockout Post-Mortem",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/journal/incident-response/2026-03-20-server-lockout.md",
+    "priority": 10
+  },
+  {
+    "title": "Homelab Architecture Overview",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/README.md",
+    "priority": 100
+  },
+  {
+    "title": "Git Repository Cleanup",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/journal/sysadmin/2026-03-20-git-repository-cleanup-project.md",
+    "priority": 5
+  }
+]
