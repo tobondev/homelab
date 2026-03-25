@@ -14,6 +14,7 @@ The current homelab environment relies on a monolithic architecture where a sing
 The goal is to move the "intelligence" of the network to a dedicated OPNsense appliance while retaining the self-healing properties of the batman-adv wireless mesh, effectively achieving a "Small Core, Smart Edge" topology.
 
 ### Before:
+
 ```
                                                  ┌──────────────────────────────────────┐
                                                                                         │
@@ -59,7 +60,8 @@ The goal is to move the "intelligence" of the network to a dedicated OPNsense ap
                                                  │    ┌──────┐    │ ────────────────────┘
                                                  │    │  TVs │    │                      
                                                  │    └──────┘    │                      
-                                                 └────────────────┘                      ```
+                                                 └────────────────┘                      
+```
 (Produced using ASCIIFLOW. https://www.asciiflow.com/)
 
 
@@ -123,9 +125,9 @@ NOTE: '{}' deliminates a planned feature
         │                │TV VLAN│           │  │   IOT VLAN   │               │      │ 
         │                │┌─────┐│ ◄─────────┘  │┌────────────┐│  ──────── x ──┘      │ 
         │                ││ TVs ││              ││ IOT Devices││  ────────────────────┘ 
-        └────────────────┤└─────┘│              │└────────────┘│                        
-                         └───────┘              └──────────────┘                        ```
-
+        └────────────────┤└─────┘│              │└────────────┘│
+                         └───────┘              └──────────────┘                        
+```
 (Produced using ASCIIFLOW. https://www.asciiflow.com/)
 
 Success is defined as: each SSID mapping to the correct DHCP scope, inter-VLAN traffic blocked by default, and the production swap executable within a maintenance window with a validated rollback path.
