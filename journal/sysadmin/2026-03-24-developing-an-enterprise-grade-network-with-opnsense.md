@@ -166,7 +166,7 @@ Created four virtual machines on KVM Host: Windows (Server 2025 and 11 Pro), RHE
 Mapped out network topology: started with 2 test vlans, 'WINDOWS_VLAN', with vlan tag 20, and 'RHEL_VLAN', with vlan tag 10.
 
 Created macvtap interface on KVM Host to allow the OPNSense VM to receive an IP address from the wider network. Created a trunk interface with vlan tags 10 and 20 using OVS and plugged in the trunk interface to each virtual client, with corresponding tags, and plugged in the other end of the interface to the OPNSense VM.
-
+```
  $ ovs-vsctl show
 [alphanumerical id redacted]
     Bridge opn-trunk
@@ -185,7 +185,7 @@ Created macvtap interface on KVM Host to allow the OPNSense VM to receive an IP 
         Port vnet20 # VLAN Trunk
             trunks: [10, 20]
             Interface vnet20
-
+```
 These VLANS and their respective clients exist only to test the virtual implementation and are not in production
 
 * **Phase 2 (Execution):** ...
@@ -207,33 +207,26 @@ VLAN Table:
 Isolated control plane on the untagged lan, allowing access only via firewall rules on trusted devices.
 
 Assigned VLAN Tags to the opn-trunk interface, which allowed the three VM clients to request IPs via DHCP; set up custom alias for RFC1918 Networks 
-
+```
     Alias: RFC1918_Networks
 
         Type: Network(s)
 
         Content: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16
-
+```
 Created NOTRUST group containing MESH\_GUEST, MESH\_IOT and MESH\_TV, group NOTRUST_Gateways containing all gateway addresses for the VLAN's DHCP servers. And implemented firewall rules around it to disallow inter-vlan access to all VLANs.
-
-
-    Firewall Rule (Applied to NOTRUST Group):
-
-        Action: Pass | Source: NOTRUST net | Destination: NOTRUST_Gateways (Port 53/UDP) | Description: Allow DNS
-
-        Action: Reject | Source: NOTRUST net | Destination: RFC1918_Networks | Description: Zero-Trust Isolation
-
 On trusted network MESH\_LAN, allowed access to control plane on firewall, and devices in the untrusted network.
 
-        Action: Pass | Source: MESH\_LAN net | Destination: This firewall | Description: On trusted MESH\_LAN allowed access to the OPNSense VM control plane.
 
+| Action | Source | Destination | Description |
+| :--- | :--- | :--- | :--- |
+| Pass | NOTRUST net | NOTRUST_Gateways (Port 53/UDP) | Allow DNS resolution for untrusted devices |
+| Reject | NOTRUST net | RFC1918_Networks | Zero-Trust Isolation (Block inter-VLAN routing) |
+| Pass | MESH_LAN net | This firewall | Allow control plane access from trusted LAN |
+| Pass | MESH_LAN net | NOTRUST net | Allow one-way access to untrusted network from trusted LAN |
 
-
-        Action: Pass | Source: MESH\_LAN | Destination: NOTRUST net | Description: On trusted MESH\_LAN allowed access to the untrusted network
-
-
-On OpenWRT, attached the tagged frames to the batman-adv interface for earch VLAN
-
+On OpenWRT, attached the tagged frames to the batman-adv interface for each VLAN
+```
 * Sanitized /etc/config/network snippet
 config device
     option name 'br-lan'
@@ -251,7 +244,7 @@ config bridge-vlan
     option vlan '3'
     list ports 'eth0:t'
     list ports 'bat0'
-
+```
 ### HITL Testing
 
 Passed the physical USB NIC controller through to the VM via VFIO to validate 802.1Q trunking.
@@ -269,6 +262,7 @@ Configured bridge-vlan filtering on the OpenWRT test node to map SSIDs to specif
 * **Result:** Verified Inter VLAN blocking is unaffected by L2 and L3 separation
 * **Result:** Verified Wireless clients are assigned the correct IP addres via DHCP depending on their VLAN assignment.
 * **Result:** Outlined warm-fallback disaster recovery playbook, with validated rollback path by replacing main mesh node in production with test mesh, keeping production node as warm-fallback node.
+
 | **Feature** | **Security Benefit** | **Implementation** |
 |------------|----------------------|--------------------|
 | **L3 Offloading** | Centralized Security Governance & Audit Trail | OPNsense on Lenovo M920q (x86) |
