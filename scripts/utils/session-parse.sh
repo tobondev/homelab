@@ -40,22 +40,46 @@ fi
 # ---------------------------------------------------------------------------
 # Step 1: Clean the raw transcript
 #
-# Pipeline:
-#   col -b          — remove backspace/overstrike sequences (typewriter artifacts)
-#   sed (ANSI)      — strip ANSI color/cursor escape sequences
-#   sed (OSC)       — strip OSC terminal sequences (e.g. terminal title changes)
-#   tr              — remove raw carriage returns
+# Pipeline order matters — each stage depends on the previous:
+#
+#   perl            — strip ANSI/VT escape sequences first, while the ESC
+#                     byte is still intact and the regex can anchor on it.
+#                     Extended two-char range [0-~] covers private sequences
+#                     like ESC= (application keypad) that the tighter [@-Z]
+#                     range missed.
+#
+#   col -b          — MUST run after perl. Resolves backspace/overstrike
+#                     sequences produced by terminal line-editing echo
+#                     (the garbled keystrokes captured while typing).
+#                     Running it before perl caused col to consume the ESC
+#                     byte, leaving orphaned sequence tails that sed/perl
+#                     could no longer match.
+#
 #   grep (script)   — drop the "Script started/done" bookend lines
 #   grep (rcfile)   — drop the sourcing of our temp rcfile from the transcript
 #   grep (banner)   — drop our own session banner lines
 #   grep (note hdr) — drop the ##### separator lines around note markers
+#   grep (zsh %)    — drop zsh PROMPT_SP partial-line markers
+#   grep (prompt)   — drop Powerlevel10k / common prompt framework lines.
+#                     These use Unicode block elements (░▒▓) and box-drawing
+#                     chars (╭ ╰) that survive ANSI stripping. Prompt lines
+#                     carry no command content so filtering is safe.
+#                     NOTE: if your prompt uses different decoration characters,
+#                     add patterns to your session-blacklist or extend here.
+#
 #   awk             — collapse 3+ consecutive blank lines into one
 # ---------------------------------------------------------------------------
-CLEAN=$(col -b < "$TYPESCRIPT" \
-    | sed 's/\x1b\[[0-9;?]*[a-zA-Z]//g' \
-    | sed 's/\x1b\][^\x07]*\x07//g' \
-    | sed 's/\x1b(B//g' \
-    | tr -d '\r' \
+
+CLEAN=$(perl -pe '
+    s/\x1b(?:
+        \[[0-9;?<>=!]*[ -\/]*[@-~]    # CSI: colors, cursor, mode sequences
+      | \][^\x07\x1b]*(?:\x07|\x1b\\) # OSC: title changes, hyperlinks
+      | [0-~]                          # Two-char: covers [@-Z\-_] and private
+                                       # sequences like ESC= ESC> ESC< (0x30-0x7E)
+    )//gx;
+    s/\r//g;                           # Strip carriage returns
+' "$TYPESCRIPT" \
+    | col -b \
     | grep -v '^Script started' \
     | grep -v '^Script done' \
     | grep -v 'homelab-rc-' \
@@ -63,6 +87,8 @@ CLEAN=$(col -b < "$TYPESCRIPT" \
     | grep -v '^\s*Entry\s*:' \
     | grep -v '^\s*Log\s*:' \
     | grep -v '^########################################$' \
+    | grep -v '^%$' \
+    | perl -CS -pe 's/[░▒▓]//g; s/^\s*[╭╰]─\s*//' \
     | awk '/^$/{blank++; if(blank<=2) print; next} {blank=0; print}')
 
 if [[ -z "$CLEAN" ]]; then

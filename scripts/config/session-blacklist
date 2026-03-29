@@ -1,0 +1,27 @@
+# =============================================================================
+# session-blacklist — Default blacklisted startup commands
+# =============================================================================
+# Commands listed here are stubbed out as no-ops during the rc sourcing phase
+# of a recorded homelab session. This suppresses startup noise that would
+# otherwise pollute the transcript with unparseable output.
+#
+# Stubs are unset immediately after rc sourcing completes, so all commands
+# listed here remain fully available during the session itself.
+#
+# To add your own entries, create:
+#   ~/.config/homelab/session-blacklist
+# One command name per line. Lines starting with # are ignored.
+# =============================================================================
+
+# --- System info / fetch tools ---
+neofetch
+fastfetch
+pfetch
+screenfetch
+macchina
+pokemon-colorscripts
+
+# --- Productivity / distraction tools that run on shell start ---
+# fortune
+# cowsay
+# lolcat
