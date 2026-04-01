@@ -171,7 +171,7 @@ Created macvtap interface on KVM Host to allow the OPNSense VM to receive an IP 
 [alphanumerical id redacted]
     Bridge opn-trunk
         Port vnet23
-            tag: 20 # Windows VLAN
+            tag: 70 # Windows VLAN
             Interface vnet23 # Windows Client
         Port vnet22
             tag: 20 # Windows VLAN
@@ -180,7 +180,7 @@ Created macvtap interface on KVM Host to allow the OPNSense VM to receive an IP 
             Interface opn-trunk
                 type: internal
         Port vnet21
-            tag: 10 # RHEL VLAN
+            tag: 60 # RHEL VLAN
             Interface vnet21 # RHEL Client
         Port vnet20 # VLAN Trunk
             trunks: [10, 20]
@@ -196,12 +196,13 @@ VLAN Table:
 
 | VLAN ID | Name | Purpose | Internet | Inter-VLAN | Status |
 |---------|------|---------|----------|------------|--------|
-| 10 | RHEL_VLAN | Virtual RHEL test client | N/A | N/A | Staging Only |
-| 20 | WINDOWS_VLAN | Virtual Windows test clients | N/A | N/A | Staging Only |
-| 2 | MESH\_TV | Smart TVs | Yes | No | Production |
-| 3 | MESH\_IOT | Untrusted IOT Devices | {No} ({Planned}) | No | Production |
-| 4 | MESH\_GUEST | Untrusted Guest Devices | Yes | No | Production |
-| 69 | MESH\_LAN | Trusted devices | Yes | Mgmt only | Production |
+| 10 | MESH\_LAN | Trusted devices | Yes | Mgmt Only | Production |
+| 20 | MESH\_TV | Smart TVs | Yes | No | Production |
+| 30 | MESH\_IOT | Untrusted IOT Devices | {No} ({Planned}) | No | Production |
+| 40 | MESH\_GUEST | Untrusted Guest Devices | Yes | No | Production |
+| 60 | RHEL_VLAN | Virtual RHEL test client | N/A | N/A | Staging Only |
+| 70 | WINDOWS_VLAN | Virtual Windows test clients | N/A | N/A | Staging Only |
+| 99 | CTRL_LAN | Management Interfaces | NO | Mgmt Only | Production |
 
 
 Isolated control plane on the untagged lan, allowing access only via firewall rules on trusted devices.
@@ -222,8 +223,9 @@ On trusted network MESH\_LAN, allowed access to control plane on firewall, and d
 | :--- | :--- | :--- | :--- |
 | Pass | NOTRUST net | NOTRUST_Gateways (Port 53/UDP) | Allow DNS resolution for untrusted devices |
 | Reject | NOTRUST net | RFC1918_Networks | Zero-Trust Isolation (Block inter-VLAN routing) |
-| Pass | MESH_LAN net | This firewall | Allow control plane access from trusted LAN |
-| Pass | MESH_LAN net | NOTRUST net | Allow one-way access to untrusted network from trusted LAN |
+| Pass | MESH\_LAN net | This firewall | Allow control plane access from trusted LAN |
+| Pass | MESH\_LAN net | NOTRUST net | Allow one-way access to untrusted network from trusted LAN |
+| Pass | MESH\_LAN net | CTRL\_LAN net | Allow access to management interface from trusted LAN |
 
 On OpenWRT, attached the tagged frames to the batman-adv interface for each VLAN
 ```
@@ -235,25 +237,19 @@ config device
 
 config bridge-vlan
     option device 'br-lan'
-    option vlan '69'
-    list ports 'eth0:t'  # The Trunk from OPNsense
+    option vlan '10'
+    list ports 'eth0:10'  # The Trunk from OPNsense
     list ports 'bat0'    # The Batman-adv Mesh interface
-
-config bridge-vlan
-    option device 'br-lan'
-    option vlan '3'
-    list ports 'eth0:t'
-    list ports 'bat0'
 ```
 ### HITL Testing
 
 Passed the physical USB NIC controller through to the VM via VFIO to validate 802.1Q trunking.
-Configured bridge-vlan filtering on the OpenWRT test node to map SSIDs to specific VLAN tags (IDs: 69, 2, 3, 4). Connected a physical Google WiFi test node to the OPNsense VM trunk.
+Configured bridge-vlan filtering on the OpenWRT test node to map SSIDs to specific VLAN tags (IDs: 10, 20, 30. 40). Connected a physical Google WiFi test node to the OPNsense VM trunk.
 
 * **Phase 3 (Verification):** ...
 - Modeled the network in OVS to verify inter-VLAN blocking using a strict ! RFC1918 rule set.
 - Verified the test node could pull a management IP on the MESH\_LAN while correctly tagging client traffic.
-- Verified the tagged traffic correctly mapped to existing Wireless Networks, confirming compatibility with the current mesh backbone, and verified inter-VLAN blocking on Wireless APs, from a wireless client on VLAN MESH\_GUEST , confirming ICMP to VLAN 69 was rejected at the firewall. Confirmed management firewall rules from device on VLAN MESH\_LAN, confirmed DNS resolution and inter-segment reach
+- Verified the tagged traffic correctly mapped to existing Wireless Networks, confirming compatibility with the current mesh backbone, and verified inter-VLAN blocking on Wireless APs, from a wireless client on VLAN MESH\_GUEST , confirming ICMP to VLAN 10 was rejected at the firewall. Confirmed management firewall rules from device on VLAN MESH\_LAN, confirmed DNS resolution and inter-segment reach
 
 ## 4. Outcome & Future Considerations
 
@@ -266,18 +262,18 @@ Configured bridge-vlan filtering on the OpenWRT test node to map SSIDs to specif
 | **Feature** | **Security Benefit** | **Implementation** |
 |------------|----------------------|--------------------|
 | **L3 Offloading** | Centralized Security Governance & Audit Trail | OPNsense on Lenovo M920q (x86) |
-| **VLAN 69 (MESH_LAN)** | Management Plane Hardening & Isolation | bridge‑vlan filtering on OpenWRT |
+| **VLAN 10 (MESH_LAN)** | Management Plane Hardening & Isolation | bridge‑vlan filtering on OpenWRT |
 | **Zero‑Trust Segmentation** | Lateral Movement Prevention (Micro‑segmentation) | OPNsense Firewall Aliases (!RFC1918) |
 | **L2/L3 Decoupling** | Architectural Resilience & Reduced Edge Attack Surface | batman‑adv mesh + 802.1Q trunking |
 | **Hardware Failback** | Business Continuity & Verified Rollback Path | Pre‑configured “Warm” Failback Node |
 
 
 ### Next Steps
-- [ ] **Pending:** Synchronize all OpenWRT configurations and create wireless networks for new TV VLAN
-- [ ] **Pending:** Back up all OpenWRT Configurations
-- [ ] **Pending:** Deploy OPNSense VM Configuration in physical device
-- [ ] **Pending:** Configure Lenovo M920q to spoof MAC address of original Mesh node to avoid blackouts
-- [ ] **Pending:** Test configuration
-- [ ] **Pending:** Outline a maintenance window to deploy implementation into production
-- [ ] **Pending:** Configure centalised logging using syslog, for grafana/loki/alloy running on server
+- [x] **Completed:** Synchronize all OpenWRT configurations and create wireless networks for new TV VLAN
+- [x] **Completed:** Back up all OpenWRT Configurations
+- [x] **Completed:** Deploy OPNSense VM Configuration in physical device -- 2026/03/31
+- [x] **Deprecated:** Configure Lenovo M920q to spoof MAC address of original Mesh node to avoid blackouts -- 2026/03/31
+- [x] **Completed:** Test configuration -- 2026/03/31
+- [x] **Completed** Outline a maintenance window to deploy implementation into production -- 2026/03/31
+- [ ] **Pending:** Configure centalized logging using syslog, for grafana/loki/alloy running on server
 - [x] **Completed:** Created a Minimum Viable Product OPNSense configuration, as baseline for deployment in hardware.
