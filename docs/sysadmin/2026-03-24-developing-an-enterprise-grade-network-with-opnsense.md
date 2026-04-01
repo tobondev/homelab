@@ -91,7 +91,7 @@ NOTE: '{}' deliminates a planned feature
                      │        │  Switch    |  VLAN Tagging     │           │          │ 
          ┌───────────┘        ├────────────────────────────────┤           │          │ 
          │                    │┌──────┐┌──────┐┌──────┐┌──────┐│           │          │ 
-         │               ┌────┼┤eth0  ││eth1  ││eth2  ││eth3  ││           │          │ 
+         │               ┌────┼┤igb0  ││igb1  ││igb2  ││igb3  ││           │          │ 
          │               │    │└──────┘└─┬────┘└──────┘└──────┘│           │          │ 
 ┌────────┴───────────┐   │    └──────────┼─────────────────────┘    ┌──────┼────────┐ │ 
 │     Main VLAN      │   │               │                          │  Guest VLAN   │ │ 
@@ -205,8 +205,7 @@ VLAN Table:
 | 99 | CTRL_LAN | Management Interfaces | NO | Mgmt Only | Production |
 
 
-Isolated control plane on the untagged lan, allowing access only via firewall rules on trusted devices.
-
+Migrated the control plane from the untagged LAN to a dedicated management network on VLAN 99 (CTRL\_LAN), allowing access only via firewall rules from trusted devices on MESH\_LAN
 Assigned VLAN Tags to the opn-trunk interface, which allowed the three VM clients to request IPs via DHCP; set up custom alias for RFC1918 Networks 
 ```
     Alias: RFC1918_Networks
