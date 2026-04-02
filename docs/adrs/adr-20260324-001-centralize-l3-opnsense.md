@@ -46,11 +46,11 @@ Review-by: 2027-03-24
 
 **Artifacts**
 | Artifact | Path / Link | Description |
-|---|---:|---|
-| Firewall design predictions | `artifacts/opnsense/firewall-design-2026-03-31.md` | Firewall Design  |
-| netstat -rn output | `artifacts/opnsense/netstat-output-2026-03-31.md` | VLAN Network Mapping test  |
-| pfctl -sr test | `artifacts/opnsense/pfctl-out-sanitized-2026-03-31.md` | Sanitized output for packet filter rules to test out firewall design in production  |
-| Port mapping table | `artifacts/opnsense/port-mapping-2026-03-31.md` | Sanitized port mapping table showing bridging of VLANs over physical ports as well as in the batman-adv mesh by using VLAN trunks and bridges. |
+|---|---|---|
+| Firewall design predictions | `artifacts/OPNsense/firewall-design-2026-03-31.md` | Firewall Design  |
+| netstat -rn output | `artifacts/OPNsense/netstat-output-2026-03-31.md` | VLAN Network Mapping test  |
+| pfctl -sr test | `artifacts/OPNsense/pfctl-out-sanitized-2026-03-31.md` | Sanitized output for packet filter rules to test out firewall design in production  |
+| Port mapping table | `artifacts/OPNsense/port-mapping-2026-03-31.md` | Sanitized port mapping table showing bridging of VLANs over physical ports as well as in the batman-adv mesh by using VLAN trunks and bridges. |
 
 # 6 Rollback Plan
 1. Disconnect OPNsense trunk; reconnect original OpenWRT main node to trunk port. 
@@ -79,8 +79,8 @@ Review-by: 2027-03-24
 # 10 Post-implementation Review
 **Date implemented:** 2026-03-31
 **Outcome:** Pass.
-	- **AC-1:** Verified in `artifacts/opnsense/port-mapping-2026-03-31.md`
-	- **AC-2:** Verified in `artifacts/opnsense/pfctl-out-sanitized-2026-03-31.md`
+	- **AC-1:** Verified in `artifacts/OPNsense/port-mapping-2026-03-31.md`
+	- **AC-2:** Verified in `artifacts/OPNsense/pfctl-out-sanitized-2026-03-31.md`
 	- **AC-3:** Production swap completed. Rollback testing scheduled for next available maintenance window.
 	- **AC-4:**  HITL validation completed (802.1Q trunking and DHCP scope mapping verified on test node).
 **Follow-ups:**

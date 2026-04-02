@@ -68,7 +68,8 @@ The goal is to move the "intelligence" of the network to a dedicated OPNsense ap
 
 ### After:
 
-NOTE: '{}' deliminates a planned feature
+│  { } = Planned / Not Yet Deployed    │
+
 ```
                                              ┌────────────────────────────────────────┐ 
                                                                                       │ 
@@ -80,7 +81,7 @@ NOTE: '{}' deliminates a planned feature
                      │                                                     │          │ 
                      │                                                     │            
                      │        ┌────────────────────────────────┐           │         {x}
-                     │        │     Lenovo M920q - OPNSense    │           │            
+                     │        │     Lenovo M920q - OPNsense    │           │            
                      │        ├────────────────────────────────┤           │          │ 
                      │        │           {IDS/IPS}            │           │          │ 
                      │        ├────────┬───────┬───────────────┤           │          │ 
@@ -128,7 +129,11 @@ NOTE: '{}' deliminates a planned feature
         └────────────────┤└─────┘│              │└────────────┘│
                          └───────┘              └──────────────┘                        
 ```
+│  { } = Planned / Not Yet Deployed    │
+
 (Produced using ASCIIFLOW. https://www.asciiflow.com/)
+
+
 
 Success is defined as: each SSID mapping to the correct DHCP scope, inter-VLAN traffic blocked by default, and the production swap executable within a maintenance window with a validated rollback path.
 
@@ -162,10 +167,10 @@ The production swap is designed so that the existing main node is never decommis
 
 * **Phase 1 (Preparation):** ...
 
-Created four virtual machines on KVM Host: Windows (Server 2025 and 11 Pro), RHEL 10 and OPNSense. One router, three clients.
+Created four virtual machines on KVM Host: Windows (Server 2025 and 11 Pro), RHEL 10 and OPNsense. One router, three clients.
 Mapped out network topology: started with 2 test vlans, 'WINDOWS_VLAN', with vlan tag 20, and 'RHEL_VLAN', with vlan tag 10.
 
-Created macvtap interface on KVM Host to allow the OPNSense VM to receive an IP address from the wider network. Created a trunk interface with vlan tags 10 and 20 using OVS and plugged in the trunk interface to each virtual client, with corresponding tags, and plugged in the other end of the interface to the OPNSense VM.
+Created macvtap interface on KVM Host to allow the OPNsense VM to receive an IP address from the wider network. Created a trunk interface with vlan tags 10 and 20 using OVS and plugged in the trunk interface to each virtual client, with corresponding tags, and plugged in the other end of the interface to the OPNsense VM.
 ```
  $ ovs-vsctl show
 [alphanumerical id redacted]
@@ -250,6 +255,17 @@ Configured bridge-vlan filtering on the OpenWRT test node to map SSIDs to specif
 - Verified the test node could pull a management IP on the MESH\_LAN while correctly tagging client traffic.
 - Verified the tagged traffic correctly mapped to existing Wireless Networks, confirming compatibility with the current mesh backbone, and verified inter-VLAN blocking on Wireless APs, from a wireless client on VLAN MESH\_GUEST , confirming ICMP to VLAN 10 was rejected at the firewall. Confirmed management firewall rules from device on VLAN MESH\_LAN, confirmed DNS resolution and inter-segment reach
 
+| Test | Source | Target | Expected | Actual | Status |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Inter-VLAN Blocking | `MESH_GUEST` (wireless client) | `MESH_LAN` (VLAN 10) | ICMP Reject | Rejected at firewall | Pass |
+| WAN Access (NOTRUST group) | `MESH_GUEST` (wireless client) | WAN (Internet) | Allow | Reachable | Pass |
+| Management Plane Access | `MESH_LAN` device | OPNsense control plane | Allow | Allowed | Pass |
+| CTRL_LAN Isolation | `MESH_GUEST` device | `CTRL_LAN` (VLAN 99) | Reject | Rejected | Pass |
+| DNS Resolution | `MESH_LAN` device | Upstream DNS | Resolve | Resolved | Pass |
+| Inter-Segment Reach (Trusted → Untrusted) | `MESH_LAN` device | `NOTRUST` group | Allow | Reachable | Pass |
+
+Note on NOTRUST group testing: WAN access and inter-VLAN blocking were validated against MESH_GUEST as a representative member of the NOTRUST group (MESH_GUEST, MESH_IOT, MESH_TV). Since isolation rules are applied at the group level, a passing result on one member validates the ruleset for all members.
+
 ## 4. Outcome & Future Considerations
 
 * **Result:** Successfully designed a network topology that decoupled L2 and L3, moving the SPOF away from the wireless mesh radios and onto a more capable routing core.
@@ -270,9 +286,10 @@ Configured bridge-vlan filtering on the OpenWRT test node to map SSIDs to specif
 ### Next Steps
 - [x] **Completed:** Synchronize all OpenWRT configurations and create wireless networks for new TV VLAN
 - [x] **Completed:** Back up all OpenWRT Configurations
-- [x] **Completed:** Deploy OPNSense VM Configuration in physical device -- 2026/03/31
+- [x] **Completed:** Deploy OPNsense VM Configuration in physical device -- 2026/03/31
 - [x] **Deprecated:** Configure Lenovo M920q to spoof MAC address of original Mesh node to avoid blackouts -- 2026/03/31
 - [x] **Completed:** Test configuration -- 2026/03/31
 - [x] **Completed** Outline a maintenance window to deploy implementation into production -- 2026/03/31
 - [ ] **Pending:** Configure centalized logging using syslog, for grafana/loki/alloy running on server
-- [x] **Completed:** Created a Minimum Viable Product OPNSense configuration, as baseline for deployment in hardware.
+- [x] **Completed:** Created a Minimum Viable Product OPNsense configuration, as baseline for deployment in hardware.
+- [ ] **Pending architectural consideration:** MESH\_IOT is currently a member of the NOTRUST group, which permits WAN access. Once fully local IOT management is deployed, MESH\_IOT will need to be broken out of NOTRUST into a dedicated no-WAN group — at which point the group rule will need to be split and the firewall alias updated accordingly.
