@@ -1,9 +1,10 @@
 #!/bin/bash
 # ==============================================================================
-# new-entry.sh — Journal & Incident Report Generator
+# new-entry.sh — Dynamic Documentation Generator
 # ==============================================================================
-# Creates a new Markdown entry from template, then hands off to session-start.sh
-# to begin a recorded terminal session tied to that entry.
+# Creates a new Markdown entry from template, populate it using variable expansion
+# then hands off to session-start.sh if necessary to begin a recorded terminal
+# session tied to that entry. Then assists in commiting the changes.
 # ==============================================================================
 
 ################################################################################
@@ -16,35 +17,29 @@ if [[ -z "$SCRIPT_SOURCE" ]]; then
 fi
 SCRIPT_ABSOLUTE=$(cd "$SCRIPT_SOURCE" && pwd -P)
 ROOT_ABSOLUTE=$(cd "$SCRIPT_ABSOLUTE"/../../ && pwd -P)
-PARENT_ABSOLUTE=$ROOT_ABSOLUTE/docs
-RUNBOOK_ABSOLUTE=$PARENT_ABSOLUTE/runbooks
-ADR_ABSOLUTE=$PARENT_ABSOLUTE/adrs
-ARTIFACTS_ABSOLUTE=$PARENT_ABSOLUTE/artifacts
-JOURNAL_ABSOLUTE=$PARENT_ABSOLUTE/journal
-JOURNAL_DIR=$JOURNAL_ABSOLUTE/operations
-INCIDENT_DIR=$JOURNAL_ABSOLUTE/incident
+#Declare location for the templates
+TEMPLATE_DIR=$ROOT_ABSOLUTE/docs/templates
+
+# Sanity check
+
+if [[ ! -d "$TEMPLATE_DIR" ]]; then
+    echo "Error: Template directory not found. This script requires a tamplate to run"
+    exit 1
+fi
 
 ################################################################################
-# Create directories if they don't exist
+# Dynamic template discovery
+# This assumes that templates are created inside the docs/templates directory
+# and that they are named in the convention [type-of-entry]-template.md ;
+# it follows that logic to get [type-of-entry] and dynamically creates an array
+# with each item, and a corresponding array of numbers, in order to populate a
+# selection screen. If no templates are found, the script exits with an error.
 ################################################################################
-if [[ ! -d "$PARENT_ABSOLUTE" ]]; then
-    echo "Creating directories for documentation"
-    mkdir -p "$PARENT_ABSOLUTE"
-fi
+TEMPLATES=("$TEMPLATE_DIR"/*-template.md)
 
-if [[ ! -d "$JOURNAL_ABSOLUTE" ]]; then
-    echo "Creating directories for journal"
-    mkdir -p "$JOURNAL_ABSOLUTE"
-fi
-
-if [[ ! -d "$JOURNAL_DIR" ]]; then
-    echo "Creating directories for sysadmin entries"
-    mkdir -p "$JOURNAL_DIR"
-fi
-
-if [[ ! -d "$INCIDENT_DIR" ]]; then
-    echo "Creating directories for incident response entries"
-    mkdir -p "$INCIDENT_DIR"
+if [[ ${#TEMPLATES[@]} -eq 0 ]]; then
+    echo "Error: No templates found in $TEMPLATE_DIR"
+    exit 1
 fi
 
 ################################################################################
@@ -57,28 +52,23 @@ echo "╚═══════════════════════�
 
 # --- Entry type selection (loops until valid) ---
 while true; do
-    echo ""
-    echo "  (1) Sysadmin Journal Entry"
-    echo "  (2) Incident Response Report"
-    echo "  (^C) Exit"
-    echo ""
-    read -rp "Entry type: " REPORT_TYPE
 
-    if [[ "$REPORT_TYPE" == "1" ]]; then
-        REPORTS_DIR=$JOURNAL_DIR
-        REPORT_TYPE_LABEL="sysadmin-journal"
-        echo ""
-        echo "--- New Sysadmin Journal Entry ---"
-        break
-    elif [[ "$REPORT_TYPE" == "2" ]]; then
-        REPORTS_DIR=$INCIDENT_DIR
-        REPORT_TYPE_LABEL="incident-report"
-        echo ""
-        echo "--- New Incident Response Report ---"
-        break
-    else
-        echo "  Invalid choice. Please enter 1 or 2."
-    fi
+	for i in "${!TEMPLATES[@]}"; do
+	    # Display human-friendly name (e.g., 'adr' or 'incident-report')
+    	DISPLAY_NAME=$(basename "${TEMPLATES[$i]}" -template.md)
+    	printf "  (%d) %s\n" "$((i+1))" "$DISPLAY_NAME"
+	done
+
+	read -rp "Selection (1-${#TEMPLATES[@]}): " CHOICE
+# Check if input is a positive integer
+# Check if input is within the bounds of the array
+	    if [[ "$CHOICE" =~ ^[0-9]+$ ]] && \
+		(( CHOICE >= 1 && CHOICE <= ${#TEMPLATES[@]})); then
+		SELECTED_TEMPLATE="${TEMPLATES[$((CHOICE-1))]}"
+	        break
+	    else
+	        echo "  Please choose a valid entry from the list."
+	    fi
 done
 
 # --- Title input (loops until non-empty) ---
@@ -91,13 +81,24 @@ while true; do
     fi
 done
 
+
+################################################################################
+# Determine directories for the entries based on the template and create them
+# if empty (mkdir -p will continue without errors if the folder exists).
+# The script assumes that the [type-of-entry] is also the name of the directory
+# that the entry will live in.
+################################################################################
+# Logic: Strip suffix -> mkdir -p
+CATEGORY=$(basename "$SELECTED_TEMPLATE" -template.md)
+TARGET_DIR="$ROOT_ABSOLUTE/docs/${CATEGORY}"
+mkdir -p "$TARGET_DIR"
 ################################################################################
 # Naming and Dating
 ################################################################################
 CURRENT_DATE=$(date +%Y-%m-%d)
 CURRENT_TIME=$(date +%H:%M)
 SAFE_TITLE=$(echo "$RAW_TITLE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')
-FILENAME="${REPORTS_DIR}/${CURRENT_DATE}-${SAFE_TITLE}.md"
+FILENAME="${TARGET_DIR}/${CURRENT_DATE}-${SAFE_TITLE}.md"
 
 ################################################################################
 # Generate Template
@@ -109,13 +110,21 @@ while IFS='' read -r line; do
         line=${line/"{{${VAR_NAME}}}"/"$VALUE"}
     done
     printf '%s\n' "$line"
-done < "$REPORTS_DIR/$REPORT_TYPE_LABEL-template.md" > "$FILENAME"
+done < "$SELECTED_TEMPLATE" > "$FILENAME"
+
+################################################################################
+# Perform a check for whether the template calls for a shell session
+# Hand off to session wrapper if so
+################################################################################
+
+if grep -q "SESSION_LOG_START" "$FILENAME"; then
+    echo "✓ Sentinel found. Starting terminal session..."
+    bash "$SCRIPT_ABSOLUTE/session-start.sh" "$FILENAME" "$SCRIPT_ABSOLUTE"
+else
+    echo "✓ No sentinel. Opening editor..."
+    ${EDITOR:-vi} "$FILENAME"
+fi
 
 echo ""
 echo "✓ Entry created: $FILENAME"
 echo ""
-
-################################################################################
-# Hand off to session wrapper
-################################################################################
-bash "$SCRIPT_ABSOLUTE/session-start.sh" "$FILENAME" "$SCRIPT_ABSOLUTE"
