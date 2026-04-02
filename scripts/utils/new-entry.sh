@@ -17,20 +17,31 @@ fi
 SCRIPT_ABSOLUTE=$(cd "$SCRIPT_SOURCE" && pwd -P)
 ROOT_ABSOLUTE=$(cd "$SCRIPT_ABSOLUTE"/../../ && pwd -P)
 PARENT_ABSOLUTE=$ROOT_ABSOLUTE/docs
-JOURNAL_DIR=$PARENT_ABSOLUTE/sysadmin
-INCIDENT_DIR=$PARENT_ABSOLUTE/incident-response
+RUNBOOK_ABSOLUTE=$PARENT_ABSOLUTE/runbooks
+ADR_ABSOLUTE=$PARENT_ABSOLUTE/adrs
+ARTIFACTS_ABSOLUTE=$PARENT_ABSOLUTE/artifacts
+JOURNAL_ABSOLUTE=$PARENT_ABSOLUTE/journal
+JOURNAL_DIR=$JOURNAL_ABSOLUTE/operations
+INCIDENT_DIR=$JOURNAL_ABSOLUTE/incident
 
 ################################################################################
 # Create directories if they don't exist
 ################################################################################
 if [[ ! -d "$PARENT_ABSOLUTE" ]]; then
-    echo "Creating directories for journal"
+    echo "Creating directories for documentation"
     mkdir -p "$PARENT_ABSOLUTE"
 fi
+
+if [[ ! -d "$JOURNAL_ABSOLUTE" ]]; then
+    echo "Creating directories for journal"
+    mkdir -p "$JOURNAL_ABSOLUTE"
+fi
+
 if [[ ! -d "$JOURNAL_DIR" ]]; then
     echo "Creating directories for sysadmin entries"
     mkdir -p "$JOURNAL_DIR"
 fi
+
 if [[ ! -d "$INCIDENT_DIR" ]]; then
     echo "Creating directories for incident response entries"
     mkdir -p "$INCIDENT_DIR"

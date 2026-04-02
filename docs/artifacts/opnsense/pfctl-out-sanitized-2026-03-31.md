@@ -37,8 +37,6 @@ block drop in log quick on em0 inet6 from :: to any label "6b231f0e90865b14cd918
 pass in quick inet proto tcp from (NOTRUST:network) to <NOTRUST_Gateways> port = domain flags S/SA keep state label "97fa1401-436a-4d54-b22f-c6823b62f57a"
 pass in quick inet proto udp from (NOTRUST:network) to <NOTRUST_Gateways> port = domain keep state label "97fa1401-436a-4d54-b22f-c6823b62f57a"
 pass in quick inet from (bridge0:network) to any flags S/SA keep state label "89a79dba-3f24-4951-8add-d79a6603515a"
-pass in quick inet proto tcp from (vlan0.30:network) to (self) port = https flags S/SA keep state label "4b5e1a28-b009-4879-ae2d-8e268f739f60"
-pass in quick inet proto udp from (vlan0.30:network) to (self) port = https keep state label "4b5e1a28-b009-4879-ae2d-8e268f739f60"
 pass in quick on NOTRUST inet proto tcp from any to <NOTRUST_Gateways> port = domain flags S/SA keep state label "c19749b4-e939-4253-9720-b8c84e124dbd"
 pass in quick on NOTRUST inet proto udp from any to <NOTRUST_Gateways> port = domain keep state label "c19749b4-e939-4253-9720-b8c84e124dbd"
 pass in on NOTRUST inet from (NOTRUST:network) to ! <RFC1918_Networks> flags S/SA keep state label "74b91c0d-b4f4-429b-940b-49e68809aa81"
