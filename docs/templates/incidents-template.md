@@ -1,4 +1,4 @@
-# Incident Report: [Brief and clear title, detailing the issue and resolution]
+# Incident Report: {{RAW_TITLE}} [Brief and clear title, detailing the issue and resolution]
 
 **Date of Incident:** {{CURRENT_DATE}}
 **Date of Report:** {{CURRENT_DATE}}
@@ -24,12 +24,34 @@
 * **[00:00]** - Attempted [Action A], resulting in [Outcome A].
 * **[00:00]** - System restored to standard operation.
 
-## 3. Root Cause Analysis (RCA)
+## 3. Risk Assessment
+#### Risk Assessment Matrix
+
+| Likelihood \ Severity | Very Low | Low | Medium | High | Very High |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **Very High** | Medium | High | High | **Critical** | **Critical** |
+| **High** | Medium | Medium | High | High | **Critical** |
+| **Medium** | Low | Medium | Medium | High | High |
+| **Low** | Very Low | Low | Medium | Medium | High |
+| **Very Low** | Very Low | Very Low | Low | Medium | Medium |
+
+
+### Risk Asessment Analysis
+| Vulnerability | Threat | Exposure | Risk |
+| :--- | :--- | :--- | :--- |
+| 	 | 	 | 	 | 	 |
+| 	 | 	 | 	 | 	 |
+| 	 | 	 | 	 | 	 |
+| 	 | 	 | 	 | 	 |
+| 	 | 	 | 	 |	 |
+
+
+## 4. Root Cause Analysis (RCA)
 > *Why did this happen? Focus on the technical failure, process gap, or specific operator error. Strip away emotion; focus on the mechanics of the failure.*
 
 [Insert RCA Here]
 
-## 4. Remediation and Recovery
+## 5. Remediation and Recovery
 > *Detail the specific technical steps taken to fix the issue. Include the utilities used (e.g., `testdisk`, `rsync`), theories tested (both successful and failed), and how you verified the final fix.*
 
 * **Triage:** ...
@@ -39,7 +61,7 @@
 <!-- SESSION_LOG_START -->
 <!-- SESSION_LOG_END -->
 
-## 5. Lessons Learned & Action Items
+## 6. Lessons Learned & Action Items
 > *What are you changing to prevent this from happening again? This is the most critical section for an employer, as it demonstrates continuous improvement.*
 
 - [ ] **Pending:** [e.g., Research and deploy Relax-and-Recover (ReaR) for bare-metal backups.]
