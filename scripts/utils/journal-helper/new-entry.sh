@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==============================================================================
-# new-entry.sh — Dynamic Documentation Generator
+# new-entry.sh — Journal Helper -- Dynamic Documentation Generator
 # ==============================================================================
 # Creates a new Markdown entry from template, populate it using variable expansion
 # then hands off to session-start.sh if necessary to begin a recorded terminal
@@ -16,14 +16,14 @@ if [[ -z "$SCRIPT_SOURCE" ]]; then
     SCRIPT_SOURCE=./
 fi
 SCRIPT_ABSOLUTE=$(cd "$SCRIPT_SOURCE" && pwd -P)
-ROOT_ABSOLUTE=$(cd "$SCRIPT_ABSOLUTE"/../../ && pwd -P)
+ROOT_ABSOLUTE=$(cd "$SCRIPT_ABSOLUTE"/../../../ && pwd -P)
 #Declare location for the templates
 TEMPLATE_DIR=$ROOT_ABSOLUTE/docs/templates
 
 # Sanity check
 
 if [[ ! -d "$TEMPLATE_DIR" ]]; then
-    echo "Error: Template directory not found. This script requires a tamplate to run"
+    echo "Error: Template directory not found. This script requires a template to run"
     exit 1
 fi
 
@@ -47,7 +47,10 @@ fi
 ################################################################################
 echo ""
 echo "╔══════════════════════════════════════════╗"
-echo "║        Homelab Journal — New Entry       ║"
+echo "║   Journal Helper — New Entry Workflow    ║"
+echo "║                                          ║"
+echo "║                                          ║"
+echo "║     Please select the type of entry      ║"
 echo "╚══════════════════════════════════════════╝"
 
 # --- Entry type selection (loops until valid) ---
@@ -70,6 +73,14 @@ while true; do
 	        echo "  Please choose a valid entry from the list."
 	    fi
 done
+echo ""
+echo "╔══════════════════════════════════════════╗"
+echo "║   Journal Helper — New Entry Workflow    ║"
+echo "║                                          ║"
+echo "║                                          ║"
+echo "║    Please input title for new entry      ║"
+echo "╚══════════════════════════════════════════╝"
+
 
 # --- Title input (loops until non-empty) ---
 while true; do
