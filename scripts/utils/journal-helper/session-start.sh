@@ -130,7 +130,7 @@ NOTEEOF
 
 # --- Build stub and unset blocks from blacklist files ---
 
-DEFAULT_BLACKLIST="$SCRIPT_ABSOLUTE/../config/session-blacklist"
+DEFAULT_BLACKLIST="$SCRIPT_ABSOLUTE/.config/session-blacklist"
 USER_BLACKLIST="$HOME/.config/homelab/session-blacklist"
 
 STUB_BLOCK=""
