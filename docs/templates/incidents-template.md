@@ -5,7 +5,7 @@
 **Status:** [Resolved / Mitigated / Ongoing]
 **Severity:** [Low / Medium / High / Critical]
 **Services Impacted:** [e.g., Main Hypervisor, Storage Array, Jellyfin Media Stack]
-**CVE ID(s):** [Instert any CVE ID or IDs that are associated with this report, if any]
+**CVE ID(s):** [Insert any CVE ID or IDs that are associated with this report, if any]
 ---
 
 ## 1. Executive Summary

@@ -47,7 +47,7 @@ Review-by: 2027-03-24
 **Artifacts**
 | Artifact | Path / Link | Description |
 |---|---|---|
-| Firewall design predictions | `artifacts/OPNsense/firewall-design-2026-03-31.md` | Firewall Design  |
+| Firewall design predictions | `artifacts/opnsense/firewall-design-2026-03-31.md` | Firewall Design  |
 | netstat -rn output | `artifacts/OPNsense/netstat-output-2026-03-31.md` | VLAN Network Mapping test  |
 | pfctl -sr test | `artifacts/OPNsense/pfctl-out-sanitized-2026-03-31.md` | Sanitized output for packet filter rules to test out firewall design in production  |
 | Port mapping table | `artifacts/OPNsense/port-mapping-2026-03-31.md` | Sanitized port mapping table showing bridging of VLANs over physical ports as well as in the batman-adv mesh by using VLAN trunks and bridges. |
@@ -104,7 +104,7 @@ Review-by: 2027-03-24
 - [x] One-line decision statement present
 - [x] Acceptance criteria defined and measurable
 - [x] Test artifacts linked and reproducible
-- [ ] Rollback plan documented and timed
+- [x] Rollback plan documented and timed
 - [x] Confidence and review date set
 
 ## Index entry (adr-index.md)
