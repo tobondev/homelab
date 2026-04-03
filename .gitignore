@@ -1,0 +1,5 @@
+# Journal Helper - Raw Session Data
+# Prevents raw terminal logs from being pushed to GitHub
+docs/logs/*.log
+# Metadata for scriptreplay; irrelevant for documentation
+docs/logs/*.timing
