@@ -3,7 +3,7 @@
 **Date:** 2026-03-24
 **Report Time:** 18:23
 **Category:** Architecture | Security | Networking
-**Status:** In Progress
+**Status:** Completed
 
 ---
 
@@ -165,7 +165,7 @@ The production swap is designed so that the existing main node is never decommis
 
 ## 3. Implementation & Execution
 
-* **Phase 1 (Preparation):** ...
+* **Phase 1 (Preparation):** 
 
 Created four virtual machines on KVM Host: Windows (Server 2025 and 11 Pro), RHEL 10 and OPNsense. One router, three clients.
 Mapped out network topology: started with 2 test vlans, 'WINDOWS_VLAN', with vlan tag 20, and 'RHEL_VLAN', with vlan tag 10.
@@ -271,7 +271,7 @@ Note on NOTRUST group testing: WAN access and inter-VLAN blocking were validated
 * **Result:** Successfully designed a network topology that decoupled L2 and L3, moving the SPOF away from the wireless mesh radios and onto a more capable routing core.
 * **Result:** Established a repeatable testing pipeline that allows for zero-downtime configuration changes in the future
 * **Result:** Verified Inter VLAN blocking is unaffected by L2 and L3 separation
-* **Result:** Verified Wireless clients are assigned the correct IP addres via DHCP depending on their VLAN assignment.
+* **Result:** Verified Wireless clients are assigned the correct IP address via DHCP depending on their VLAN assignment.
 * **Result:** Outlined warm-fallback disaster recovery playbook, with validated rollback path by replacing main mesh node in production with test mesh, keeping production node as warm-fallback node.
 
 | **Feature** | **Security Benefit** | **Implementation** |
@@ -290,6 +290,6 @@ Note on NOTRUST group testing: WAN access and inter-VLAN blocking were validated
 - [x] **Deprecated:** Configure Lenovo M920q to spoof MAC address of original Mesh node to avoid blackouts -- 2026/03/31
 - [x] **Completed:** Test configuration -- 2026/03/31
 - [x] **Completed** Outline a maintenance window to deploy implementation into production -- 2026/03/31
-- [ ] **Pending:** Configure centalized logging using syslog, for grafana/loki/alloy running on server
+- [ ] **Pending:** Configure centralized logging using syslog, for grafana/loki/alloy running on server
 - [x] **Completed:** Created a Minimum Viable Product OPNsense configuration, as baseline for deployment in hardware.
 - [ ] **Pending architectural consideration:** MESH\_IOT is currently a member of the NOTRUST group, which permits WAN access. Once fully local IOT management is deployed, MESH\_IOT will need to be broken out of NOTRUST into a dedicated no-WAN group — at which point the group rule will need to be split and the firewall alias updated accordingly.

@@ -72,7 +72,7 @@ rollback_from_artifact() {
 }
 
 ################################################################################
-# Logic: Analysis & Patching (Original Core)
+# Logic: Analysis & Patching
 ################################################################################
 
 get_freebsd_catalog() {
@@ -80,14 +80,45 @@ get_freebsd_catalog() {
     arch=$(uname -m)
     REPOURL="https://pkg.freebsd.org/FreeBSD:${freebsd_ver}:${arch}/latest"
     mkdir -p "$TMP_DIR"
-    fetch -q -o "${TMP_DIR}/packagesite.txz" "${REPOURL}/packagesite.txz" || {
+    
+    echo "==> Fetching catalog from ${REPOURL}..."
+    fetch -q -o "${TMP_DIR}/packagesite.pkg" "${REPOURL}/packagesite.pkg" || {
         echo "ERROR: Failed to fetch catalog" >&2; exit 1
     }
-    tar -xf "${TMP_DIR}/packagesite.txz" -C "$TMP_DIR" packagesite.yaml
-    rm -f "${TMP_DIR}/packagesite.txz"
+    tar -xf "${TMP_DIR}/packagesite.pkg" -C "$TMP_DIR" packagesite.yaml
+    rm -f "${TMP_DIR}/packagesite.pkg"
+
+    echo "==> Parsing catalog..."
+    # Replaced flawed EOF block with a clean inline Python execution utilizing JSON Lines
+    python3 -c '
+import sys, json, os
+
+input_path = sys.argv[1]
+output_path = sys.argv[2]
+
+if not os.path.exists(input_path):
+    print(f"ERROR: Catalog file not found at {input_path}")
+    sys.exit(1)
+
+with open(input_path, "r") as infile, open(output_path, "w") as outfile:
+    for line in infile:
+        if not line.strip():
+            continue
+        try:
+            pkg_manifest = json.loads(line)
+            # separators=(",", ":") removes whitespace to ensure grep/sed logic works downstream
+            outfile.write(json.dumps(pkg_manifest, separators=(",", ":")) + "\n")
+        except json.JSONDecodeError as e:
+            pass # Skip invalid lines silently, just as the original script intended
+' "${TMP_DIR}/packagesite.yaml" "${TMP_DIR}/packagesite.parsed"
+
+    # Verify the Python script actually generated the parsed file
+    if [ ! -f "${TMP_DIR}/packagesite.parsed" ]; then
+        echo "ERROR: Failed to parse packagesite.yaml" >&2; exit 1
+    fi
 }
 
-catalog_entry() { grep "\"name\":\"${1}\"" "${TMP_DIR}/packagesite.yaml" | head -1; }
+catalog_entry() { grep "\"name\":\"${1}\"" "${TMP_DIR}/packagesite.parsed" | head -1; }
 parse_field() { printf '%s' "$1" | sed -n "s/.*\"${2}\":\"\([^\"]*\)\".*/\1/p"; }
 
 catalog_deps() {
@@ -99,8 +130,10 @@ collect_upgrades() {
     pkg_name="$1"
     case " $VISITED " in *" ${pkg_name} "*) return ;; esac
     VISITED="$VISITED $pkg_name"
+    
     entry=$(catalog_entry "$pkg_name")
     [ -z "$entry" ] && return
+    
     fb_ver=$(parse_field "$entry" "version")
 
     if ! pkg info -e "$pkg_name" 2>/dev/null; then

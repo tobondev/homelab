@@ -108,8 +108,26 @@ mkdir -p "$TARGET_DIR"
 ################################################################################
 CURRENT_DATE=$(date +%Y-%m-%d)
 CURRENT_TIME=$(date +%H:%M)
+OWNER_HANDLE="@tobondev"
+OWNER_NAME="Marcos Tobon"
 SAFE_TITLE=$(echo "$RAW_TITLE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed 's/[^a-z0-9-]//g')
-FILENAME="${TARGET_DIR}/${CURRENT_DATE}-${SAFE_TITLE}.md"
+################################################################################
+# Conditional Sequential ID appending
+################################################################################
+
+if grep -q "{{SEQ_ID}}" "$SELECTED_TEMPLATE"; then
+    # 1. Detected indexed record (ADRs, Runbooks, etc.)
+    EXISTING_COUNT=$(find "$TARGET_DIR" -maxdepth 1 -name "*${CURRENT_DATE}-*" | wc -l)
+    SEQ_ID=$(printf "%03d" "$((EXISTING_COUNT + 1))")
+    # Use the singular of the category for the prefix (e.g., 'adrs' -> 'adr')
+    PREFIX=$(echo "$CATEGORY" | sed 's/s$//')
+    FILENAME_BASE="${PREFIX}-${CURRENT_DATE}-${SEQ_ID}-${SAFE_TITLE}.md"
+else
+    # 2. Detected standard log (Incidents, Operations, etc.)
+    FILENAME_BASE="${CURRENT_DATE}-${SAFE_TITLE}.md"
+fi
+
+FILENAME="${TARGET_DIR}/${FILENAME_BASE}"
 
 ################################################################################
 # Generate Template
@@ -123,6 +141,23 @@ while IFS='' read -r line; do
     printf '%s\n' "$line"
 done < "$SELECTED_TEMPLATE" > "$FILENAME"
 
+################################################################################
+# Dynamic Index Population
+################################################################################
+if grep -q "Index Entry:" "$FILENAME"; then
+    INDEX_FILE="$ROOT_ABSOLUTE/docs/adr-index.md"
+
+    # 1. Create file with headers if missing
+    if [[ ! -f "$INDEX_FILE" ]]; then
+        printf "# Architecture Decision Records Index\n\n| ID | Date | Decision | Status |\n|:---|:---|:---|:---|\n" > "$INDEX_FILE"
+        echo "  ✓ Created new adr-index.md"
+    fi
+
+    # 2. Extract and append the row
+    ENTRY_ROW=$(grep "Index Entry:" "$FILENAME" | sed 's/.*Index Entry:\*\* //')
+    echo "$ENTRY_ROW" >> "$INDEX_FILE"
+    echo "  ✓ adr-index.md updated."
+fi
 ################################################################################
 # Perform a check for whether the template calls for a shell session
 # Hand off to session wrapper if so
