@@ -1,7 +1,7 @@
 [
   {
     "title": "Server Lockout Post-Mortem",
-    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/journal/incident-response/2026-03-20-server-lockout.md",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/incidents/incident-response/2026-03-20-server-lockout.md",
     "priority": 10
   },
   {
@@ -11,7 +11,12 @@
   },
   {
     "title": "Git Repository Cleanup",
-    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/journal/sysadmin/2026-03-20-git-repository-cleanup-project.md",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-03-20-git-repository-cleanup-project.md",
+    "priority": 5
+  },
+  {
+    "title": "Architecture Decision Records: OPNsense and Smart Core - Small Edge Architecture",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/adrs/adr-2026-03-24-001-centralize-l3-opnsense.md",
     "priority": 5
   }
 ]
