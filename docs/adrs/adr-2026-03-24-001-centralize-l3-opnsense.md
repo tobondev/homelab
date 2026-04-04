@@ -1,3 +1,5 @@
+# ADR 001 Centralize L3 services on OPNsense (Lenovo M920q)
+
 File: adr-20260324-001-centralize-l3-opnsense.md
 Title: Centralize L3 services on OPNsense (Lenovo M920q)
 Date: 2026-03-24
