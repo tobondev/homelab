@@ -34,5 +34,5 @@ Beyond serving as a version-controlled repository for my infrastructure, this re
 * **Live Portfolio:** [tobon.dev](https://tobon.dev)
 * **Email:** [marcostobon@proton.me](mailto:marcostobon@proton.me)
 * **LinkedIn:** [Marcos Tobon](tobon.dev/linkedin)
-* **GitHub:** [github.com/tobondev](https://tobondev/github)
+* **GitHub:** [github.com/tobondev](https://tobon.dev/github)
 ---
