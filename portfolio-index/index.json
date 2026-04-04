@@ -14,6 +14,7 @@
     "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-03-24-decoupling-l2-mesh-and-l3-routing-for-homelab-network.md",
     "priority": 95
   },
+{
     "title": "OPNsense Deployment",
     "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-03-31-opnsense-deployment.md",
     "priority": 90
