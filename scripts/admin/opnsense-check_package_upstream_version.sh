@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # This script dynamically queries the pkg database for all locked packages, feeds that into the native pkg version check utility, comparing against the repository version, and alerts the administrator when the repository is up to date, thus ensuring manually backported packages don't silently fall out of date.
-
+# This script should live under /usr/local/bin when deployed
 # Query the pkg database for currently locked packages: evaluate for status lock, respond with name only. Pipe it into a loop and use the result to populate the PACKAGE variable
 pkg update -q
 pkg query -e '%k = 1' '%n' | while read -r PACKAGE; do

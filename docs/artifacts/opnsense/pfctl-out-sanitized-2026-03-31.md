@@ -23,7 +23,6 @@
 		block drop in log quick inet6 proto tcp from any to any port = 0 label "b454844853f2346167ad77449b79ad8e"
 		block drop in log quick inet6 proto udp from any to any port = 0 label "b454844853f2346167ad77449b79ad8e"
 		block drop in log quick from <virusprot> to any label "add09fc915886757c300419fc2ecc1e6"
-		block drop in log quick from <__wazuh_agent_drop> to any label "f828c635a801ef0a7ad4bbbd96314946"
 		block drop in log quick on em0 inet from <bogons> to any label "b7cd97a164650b538506fb551a0369e7"
 		block drop in log quick on em0 inet6 from <bogonsv6> to any label "f140a48ddade668b9d6f5259669a1d5c"
 		block drop in log quick on em0 inet from 10.0.0.0/8 to any label "3d399f8f89b68d684701badb48eab085"

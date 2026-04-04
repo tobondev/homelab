@@ -12,7 +12,6 @@
 After a routine system update, the built-in security audit tool for OPNsense firmware revealed the installed CURL version (8.17.0) was susceptible to multiple high-severity flaws. These included memory corruption (Use-after-free), credential leakage and authentication bypasses. Due to a lack of binary updates in the production repository, a manual upstreaming of the OPNsense Ports tree was required to reach a secure version (8.19.0) by building from source.
 
 ## 2. Timeline of Events
-> *Use a 24-hour time format to detail the sequence of events. This demonstrates methodical tracking and an understanding of standard log sequencing.*
 
 * **[11:40]** - Marcos triggered a routine system update. The system revealed no updates available.
 * **[11:42]** - As a precaution, Marcos ran a security audit, to identify any gaps and vulnerabilities not addressed by the production repository
@@ -66,8 +65,8 @@ After a routine system update, the built-in security audit tool for OPNsense fir
 |  CVE                 	|  Severity  	|  OPNsense Exposure                            	| Risk 	|  Fixed In  	|
 |----------------------	|------------	|-----------------------------------------------	|------	|------------	|
 |  :---                	|  :---      	|  :---                                         	|	|  :---      	|
-|  **CVE-2025-14819**  	|  Medium    	|  **HIGH** — TLS cert bypass on handle reuse   	| High  |  8.18.0    	|
-|  **CVE-2025-15224**  	|  Medium    	|  **HIGH** — same class                        	| High  |  8.18.0    	|
+|  **CVE-2025-14819**  	|  Medium    	|  **HIGH** — TLS cert bypass on handle reuse   	| Very High  |  8.18.0    	|
+|  **CVE-2025-15224**  	|  Medium    	|  **HIGH** — same class                        	| Very High  |  8.18.0    	|
 |  **CVE-2026-1965**   	|  Medium    	|  **MEDIUM** — Negotiate auth if GSSAPI built  	| Medium |  8.19.0    	|
 |  **CVE-2026-3784**   	|  Medium    	|  Low-Medium — proxy credential isolation      	| Low  	|  8.19.0    	|
 |  **CVE-2026-3783**   	|  Medium    	|  Low — OAuth2 token leak                      	| Low  	|  8.19.0    	|
@@ -84,11 +83,10 @@ After a routine system update, the built-in security audit tool for OPNsense fir
 The root cause of this incident was an inherent supply-chain delay between upstream vulnerability disclosures and vendor repository updates. OPNsense prioritizes firewall stability, which introduces a necessary testing lag between the time a third-party package (like curl) is patched upstream and when it is compiled, tested, and pushed to the OPNsense production repositories. Consequently, the system was left temporarily exposed to publicly disclosed CVEs. The lack of a native, automated mechanism to bridge this patch gap for critical packages required manual intervention via the OPNsense ports tree to secure the environment without breaking core OS dependencies.
 
 ## 5. Remediation and Recovery
-> *Detail the specific technical steps taken to fix the issue. Include the utilities used (e.g., `testdisk`, `rsync`), theories tested (both successful and failed), and how you verified the final fix.*
 
 * **Triage:** 
 	- Prioritized the development and expansion of a script that can be reused for upstreaming bsd patches, and started development of a runbook
-	- Found a well documented approach to upstream patches with a dynamic script (artifacts/miha-kralji-opnsense-freebsd-backporting.pdf)
+	- Found a well documented approach to upstream patches with a dynamic script (artifacts/freebsd-upstream-update-script.md)
 	- Determined this could be expanded and improved to add support for dependency checks.
 
 * **Execution:** 
@@ -214,7 +212,7 @@ The root cause of this incident was an inherent supply-chain delay between upstr
 
 	- Curl version was locked using `pkg lock -y curl`
 
-	- Script was developed to ensure package unlock once the repository catches up.
+	- Script was developed to ensure package unlock once the repository catches up. System location is `/usr/local/bin/opnsense-check_package_upstream_version.sh`. Script can be found at  `scripts/admin/opnsense-check_package_upstream_version.sh`
 
 	- Script was manually tested by locking another package that is current (python3 was chosen) to verify alerting.
 

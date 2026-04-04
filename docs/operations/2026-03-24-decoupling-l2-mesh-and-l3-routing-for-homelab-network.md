@@ -193,7 +193,7 @@ Created macvtap interface on KVM Host to allow the OPNsense VM to receive an IP 
 ```
 These VLANS and their respective clients exist only to test the virtual implementation and are not in production
 
-* **Phase 2 (Execution):** ...
+* **Phase 2 (Execution):**
 
 Configure VLANs
 
@@ -250,7 +250,7 @@ config bridge-vlan
 Passed the physical USB NIC controller through to the VM via VFIO to validate 802.1Q trunking.
 Configured bridge-vlan filtering on the OpenWRT test node to map SSIDs to specific VLAN tags (IDs: 10, 20, 30. 40). Connected a physical Google WiFi test node to the OPNsense VM trunk.
 
-* **Phase 3 (Verification):** ...
+* **Phase 3 (Verification):**
 - Modeled the network in OVS to verify inter-VLAN blocking using a strict ! RFC1918 rule set.
 - Verified the test node could pull a management IP on the MESH\_LAN while correctly tagging client traffic.
 - Verified the tagged traffic correctly mapped to existing Wireless Networks, confirming compatibility with the current mesh backbone, and verified inter-VLAN blocking on Wireless APs, from a wireless client on VLAN MESH\_GUEST , confirming ICMP to VLAN 10 was rejected at the firewall. Confirmed management firewall rules from device on VLAN MESH\_LAN, confirmed DNS resolution and inter-segment reach

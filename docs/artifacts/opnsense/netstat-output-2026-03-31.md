@@ -34,3 +34,5 @@ Internet6:
 | xxxx::3abd:efca:38ed:eeee%lo0 | link#6 | UHS | lo0 | |
 | xxxx::%lo0/64 | link#6 | U | lo0 | |
 | xxxx::1%lo0 | link#6 | UHS | lo0 | |
+
+** NOTE :** IPv6 is disable internally. It is enabled and present on WAN/em0 only, and disabled on all interllan VLAN interfaces per ADR001.8.

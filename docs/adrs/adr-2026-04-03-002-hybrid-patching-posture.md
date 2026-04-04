@@ -14,7 +14,7 @@ Review-by: 2026-10-03
 ## 1. Context and Problem Statement
 
 One-line summary: Establish a secure methodology for applying out-of-band security patches to core firewall packages when the official OPNsense repository lags behind upstream disclosures.
-Background: OPNsense prioritizes firewall stability, which introduces a necessary testing lag between the time a third-party package (e.g., `curl`, `openssl`) is patched upstream and when it is published to the production repository. Recently, critical CVEs (e.g., CVE-2026-3805, CVE-2025-14819) left the firewall exposed during this window. Standard FreeBSD pre-compiled binaries cannot be used as replacements due to strict dependency mismatches (e.g., FreeBSD packages including `libssh2`, which OPNsense explicitly strips). A standardized approach is required to secure the edge appliance without compromising dependency integrity or creating untracked technical debt.
+Background: OPNsense prioritizes firewall stability, which introduces a necessary testing lag between the time a third-party package (e.g., `curl`, `openssl`) is patched upstream and when it is published to the production repository. Recently, critical CVEs (e.g., CVE-2026-3805, CVE-2025-14819 - see docs/incidents/2026-04-02-manual-deployment-of-upstream-bsd-patches-for-curl-cves.md) left the firewall exposed during this window. Standard FreeBSD pre-compiled binaries cannot be used as replacements due to strict dependency mismatches (e.g., FreeBSD packages including `libssh2`, which OPNsense explicitly strips). A standardized approach is required to secure the edge appliance without compromising dependency integrity or creating untracked technical debt.
 
 ## 2. Considered Options
  
