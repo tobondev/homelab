@@ -1,38 +1,83 @@
-# Homelab Engineering & Operations Documentation
+# Homelab Engineering & Operations
 
 ## Overview
-This repository contains the architecture documentation, configuration management, and incident response logs for my primary environments. Built for high availability, driven by documentation, and tested thoroughly before deployment in production.
-Beyond serving as a version-controlled repository for my infrastructure, this repository acts as the real-time content delivery backend for my professional portfolio website, tobon.dev. The web frontend dynamically fetches markdown documentation and telemetry from this repository via a structured JSON manifest (index.json), rendering it directly into the site's custom viewer.
+
+This repository documents the architecture, configuration management, and operational decisions for my primary homelab environment. The lab runs production-grade tooling on deliberately volatile infrastructure — a design choice, not an accident. Standardizing on Arch Linux as the bare-metal host OS introduced enough system entropy to force real disaster recovery discipline and a deep understanding of the full stack, from pre-boot encryption to Layer 3 segmentation to container orchestration.
+
+The documentation here reflects two distinct phases of the project:
+
+- **Phase 1 (pre-March 2026):** Build fast, break things, learn by doing. Documentation was sparse and retroactive. The current-state architecture docs in `docs/architecture/` represent an honest reconstruction of the decisions that survived this phase, with rationale written from the current vantage point rather than backdated.
+- **Phase 2 (March 2026 onward):** Documentation-first. All architectural decisions are captured as ADRs before or during implementation. New projects (Ansible, centralized logging, AD/Azure AD integration) will have full decision records from day one.
+
+This distinction reflects how production infrastructure actually evolves — and being transparent about that is the point.
+
+Beyond version-controlled documentation, this repository also serves as the content delivery backend for my professional portfolio at [tobon.dev](https://tobon.dev). The frontend dynamically fetches markdown documentation and telemetry via a structured JSON manifest (`index.json`), rendering it directly into the site's custom viewer.
+
+---
+
+## Repository Structure
+
+```
+docs/
+  architecture/
+    CURRENT-STATE.md        # Full current-state documentation with trade-off rationale
+    DECISIONS-HISTORY.md    # Superseded approaches and why they were retired
+  adr/                      # Architectural Decision Records (Phase 2 forward)
+  hardware/
+    INVENTORY.md
+  runbooks/                 # Operational procedures and incident response
+```
 
 ---
 
 ## Core Architecture
 
-### 01. Network Security & Segregation
-* **Edge Defense:** Edge routing and firewalling utilizing a dedicated OPNsense appliance for centralized Layer 3 governance.
-* **Segmentation:** Strict VLAN topologies isolating untrusted IoT devices, guest networks, and smart TVs from core operational infrastructure.
-* **Wireless Mesh:** Layer 2 mesh backbone utilizing batman-adv and OpenWRT, structurally decoupled from Layer 3 routing to minimize overhead on mesh nodes.
+### Network Security & Segmentation
 
-### 02. Containerization & Virtualization
-* **Deployment:** Modular, hardware-agnostic microservices stack managed via Docker.
-* **Testing Pipeline:** Virtual-to-physical staging pipelines utilizing QEMU/KVM and Open vSwitch (OVS) for Hardware-in-the-Loop (HITL) pre-production validation.
-* **Isolation:** Virtualization utilized for precise resource allocation and strictly sandboxed environments to safely test deployments.
 
-### 03. Confidentiality & Integrity
-* **Data-at-Rest:** Enforced data-at-rest security across bare-metal deployments via LUKS Full Disk Encryption and strict SSH-key-only access controls.
-* **Zero-Trust:** Implementation of strict firewall aliases (e.g., !RFC1918) to block inter-VLAN routing by default and prevent lateral movement.
-* **State Management:** BTRFS copy-on-write filesystem deployed for native bit-rot protection and instantaneous, state-level rollbacks during incident response scenarios.
+- **Edge Routing & Firewall:** Dedicated OPNsense appliance for centralized Layer 3 governance, enforcing strict firewall rules and comprehensive logging
+- **VLAN Segmentation:** Isolated topologies for IoT, guest, smart TV, and core infrastructure. Untrusted devices have no lateral movement path to operational systems.
+- **Wireless Mesh:** Layer 2 backbone via `batman-adv` on OpenWRT nodes, structurally decoupled from Layer 3 to minimize overhead on mesh nodes. DHCP and routing remain solely on OPNsense. These nodes are WAN-denied and are only available in the control plane in L3.
 
-### 04. Availability & Change Management
-* **Disaster Recovery:** Automated 3-2-1 backup strategy with atomic stateful backup processes and offsite synchronization.
-* **Failback Integration:** Architecture includes pre-configured warm failback hardware, ensuring business continuity and a validated, zero-downtime rollback path.
-* **Version Control:** Strict version control and standardized configurations enforced via Git, requiring technical documentation and root-cause post-mortems for all architectural decisions.
+### Storage & Pre-Boot Security
+
+
+- **Full Disk Encryption:** LUKS encryption across all bare-metal deployments, with LVM layered on top to allow single-passphrase unlock of the full filesystem. Keys are rotated on a six-month schedule; no two systems share a key.
+- **Filesystem:** BTRFS with CoW semantics for native bit-rot protection and instantaneous snapshot-level rollbacks. Chosen over ZFS for native kernel support — critical in a frequent-update Arch environment where DKMS-based ZFS would be a reliability liability.
+- **Bootloader:** systemd-boot, standardized across all systems after deliberate evaluation against GRUB's Argon2ID support limitations at the time of the decision.
+
+### Disaster Recovery & Availability
+- **Backup Strategy:** Automated 3-2-1 backup architecture managed by `btrbk` and and `rClone`. Local snapshots, cross-host SSH replication (using btrbk's restricted SSH helper to limit key exposure), and offsite cold storage with a 6-month Glacier bucket rotation for cost containment. Implementations are currently undergoing sanitization for public release.
+- **Warm Failback:** Pre-configured standby hardware with a validated rollback path. Architecture supports zero-downtime recovery from most failure scenarios.
+- **Default Known-Good State:** systemd-boot fallback snapshot integration ensures a bootable known-good state is always one selection away; a dynamic replacement for GRUB-btrs using systemdboot is under production.
+
+### Containerization & Workloads
+- **Deployment Model:** Modular Docker Compose stacks with BTRFS bind mounts for stateful services, enabling atomic backup and restore of service state alongside container configuration.
+- **Secrets Management:** Local Vaultwarden instance as the authoritative secrets store; `.env` isolation enforced at the compose level.
+- **Observability:** LGAP stack (Loki, Grafana, Alloy, Prometheus) for centralized telemetry, log aggregation, and alerting across services and infrastructure.
+- **Testing Pipeline:** QEMU/KVM with Open vSwitch for virtual-to-physical staging, enabling hardware-in-the-loop validation before production deployment.
+
+### Zero-Trust Ingress
+- **No open inbound ports.** All external access is routed through Cloudflare Tunnels, with firewall rules validating origin IPs against Cloudflare's published ranges.
+- **Pre-boot remote access:** Static interface IPs configured for tinyssh, enabling encrypted remote access before the main SSH daemon initializes — used for remote LUKS unlock during disaster recovery.
+
+---
+
+## Planned Work
+
+The following are in active planning or early implementation. ADRs will be published as decisions are finalized.
+
+- **Ansible:** Configuration management and automated provisioning across bare-metal and VM infrastructure.
+- **Active Directory / Azure AD:** Mixed-OS domain integration (Linux + Windows), including RHEL enrollment and Entra ID hybrid scenarios.
+- **Suricata IDS:** IDS system runnig on OPNsense hardware, which provides a first layer of detection and response for robust network security
+- **Wazuh XDR:** Running on virtualized softare, and integrating with OPNsense's wazuh agent to provide network-wide protection,
+- **Centralized Logging with PLGA Stack:** Prometheus, Grafana, Loki and Alloy to allow SIEM integration for log correlation, alert triage, and security event visibility across Network, IDS, IPS, XDR, Hosts and  Docker Stacks.
 
 ---
 
 ## Contact
-* **Live Portfolio:** [tobon.dev](https://tobon.dev)
-* **Email:** [marcostobon@proton.me](mailto:marcostobon@proton.me)
-* **LinkedIn:** [Marcos Tobon](tobon.dev/linkedin)
-* **GitHub:** [github.com/tobondev](https://tobon.dev/github)
----
+
+- **Portfolio:** [tobon.dev](https://tobon.dev)
+- **Email:** [marcostobon@proton.me](mailto:marcostobon@proton.me)
+- **LinkedIn:** [Marcos Tobon](https://tobon.dev/linkedin)
+- **GitHub:** [github.com/tobondev](https://tobon.dev/github)

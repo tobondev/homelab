@@ -76,12 +76,12 @@ echo ""
 echo ""
 
 while true; do
-	read WORKFLOW_SELECTION
-	if [[ "$WORKFLOW_SELECTION" == Y ]]; then
+	read -r WORKFLOW_SELECTION
+	if [[ "${WORKFLOW_SELECTION,,}" == "y" ]]; then
 	echo "Starting Entry Editor Workflow"
 	bash "$SCRIPT_ABSOLUTE/edit-entry.sh" "$ROOT_ABSOLUTE" "$TEMPLATE_DIR"
 	exit
-	elif [[ "$WORKFLOW_SELECTION" == N ]]; then
+	elif [[ "${WORKFLOW_SELECTION,,}" == "n" ]]; then
 	echo "Starting Entry Creation Workflow"
 	bash "$SCRIPT_ABSOLUTE/new-entry.sh"
 	exit
