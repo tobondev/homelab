@@ -115,12 +115,18 @@ while true; do
 # Check if input is within the bounds of the array
             if [[ "$CHOICE" =~ ^[0-9]+$ ]] && \
                 (( CHOICE >= 1 && CHOICE <= ${#ENTRIES[@]})); then
-                SELECTED_TEMPLATE="${ENTRIES[$((CHOICE-1))]}"
+                SELECTED_ENTRY="${ENTRIES[$((CHOICE-1))]}"
                 break
             else
                 echo "  Please choose a valid entry from the list."
             fi
 done
 
-echo "We will build the rest soon!"
+
+
+echo "Opening $SELECTED_ENTRY in $(echo ${EDITOR: -vi})"
+sleep 1
+
+"${EDITOR: -vi}" $SELECTED_ENTRY
+
 exit

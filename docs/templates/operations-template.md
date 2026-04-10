@@ -2,7 +2,7 @@
 
 **Date:** {{CURRENT_DATE}}
 **Report Time:** {{CURRENT_TIME}}
-**Category:** [Architecture / Security / Networking / Storage / Maintenance]
+**Category:** [Architecture / Monitoring / Security / Networking / Storage / Maintenance]
 **Status:** [Proposed / In Progress / Completed / Deprecated]
 
 ---
