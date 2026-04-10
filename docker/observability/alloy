@@ -1,0 +1,82 @@
+// 1. Alloy Internal Logging
+// Keeps track of the pipeline's own health
+logging {
+  level  = "info"
+  format = "logfmt"
+}
+
+// ==========================================
+// 2. EXPORTERS (Destinations)
+// ==========================================
+
+// Forwarding logs to the local Loki container on the observability network
+loki.write "local_loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// Forwarding metrics to the local Prometheus container
+prometheus.remote_write "local_prometheus" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+// ==========================================
+// 3. RECEIVERS (OPNsense Telemetry)
+// ==========================================
+
+// Syslog listener for OPNsense Firewall, Suricata, and Wazuh alerts
+loki.source.syslog "opnsense_syslog" {
+  listener {
+    // Listening on an unprivileged port. It needs to be mapped in docker-compose.yml
+    address  = "0.0.0.0:5140"
+    protocol = "udp"
+  }
+  
+  // Attach static labels to identify the source hardware and service in Grafana
+  labels = {
+    job      = "opnsense_telemetry",
+    instance = "lenovo-m920q",
+  }
+  
+  // Pipe the ingested syslog data directly to the Loki exporter
+  forward_to = [loki.write.local_loki.receiver]
+}
+
+// ==========================================
+// 4. BASIC HOST METRICS (Optional but recommended)
+// ==========================================
+
+// By bind mounting /proc and /sys in docker-compose.yml, 
+// we can scrape our host's hardware metrics.
+prometheus.exporter.unix "host_system" {
+  procfs_path = "/proc"
+  sysfs_path  = "/sys"
+}
+
+// Scrape the unix exporter and forward to Prometheus
+prometheus.scrape "host_metrics" {
+  targets    = prometheus.exporter.unix.host_system.targets
+  forward_to = [prometheus.remote_write.local_prometheus.receiver]
+}
+// ==========================================
+// 5. DOCKER METRICS
+// ==========================================
+
+// Discover all running Docker containers via the mounted socket
+discovery.docker "local_containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+// Scrape cAdvisor-style metrics from the discovered containers
+prometheus.exporter.cadvisor "docker_metrics" {
+  docker_host = "unix:///var/run/docker.sock"
+}
+
+// Forward the scraped Docker metrics to Prometheus
+prometheus.scrape "docker_scrape" {
+  targets    = prometheus.exporter.cadvisor.docker_metrics.targets
+  forward_to = [prometheus.remote_write.local_prometheus.receiver]
+}
