@@ -23,7 +23,7 @@ During an attempt to repair a corrupted boot partition, and inside a recovery en
 
 * **[14:20]** — Strategy pivot: Recognized that the partition table was still in memory. Elected to capture a full image to an external drive before any reboot invalidated the in-memory state.
 
-* **[14:45]** — Data preservation: `dd` image of the LUKS container, transferred to external drive completed successfully. Filesystem contents confirmed captured by successful unlocking of the LUKS container on the cloned image.
+* **[14:45]** — Data preservation: `dd` image of the LUKS container, transfered to external drive completed successfully. Filesystem contents confirmed captured by successful unlocking of the LUKS container on the cloned image.
 
 * **[15:40]** — Integrity verification: performed checksum on luks device in-memory and compared with salvaged image file. Checksum was a match, confirming integrity was preserved. Additionally verified unlocking of the cloned LUKS filesystem, further confirming that the clone was not a mirror of the defective current state, but rather of the in-memory pre-deletion state, as designed.
 
