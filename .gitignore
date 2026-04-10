@@ -3,3 +3,5 @@
 docs/logs/*.log
 # Metadata for scriptreplay; irrelevant for documentation
 docs/logs/*.timing
+# Filter against .env files
+*.env
