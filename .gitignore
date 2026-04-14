@@ -5,3 +5,5 @@ docs/logs/*.log
 docs/logs/*.timing
 # Filter against .env files
 *.env
+# Filter against the Ansible keys
+host-configs/ansible/playbooks/openwrt/keys/*

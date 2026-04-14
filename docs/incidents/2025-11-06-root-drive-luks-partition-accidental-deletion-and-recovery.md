@@ -92,6 +92,20 @@ The choice to clone the LUKS container was deliberate, taking into consideration
 **UUID Collision Resolution:**
 The existing clone drive was a full `dd` image of the primary disk, producing identical LUKS header UUIDs and filesystem UUIDs on both devices. Simultaneous mounting in the recovery environment was rejected by the kernel due to this collision. UUIDs were updated on all layers of the clone drive to allow both to be mounted concurrently, preserving the clone as a fallback while the primary was re-imaged.
 
+
+` ` `bash
+# Rotate LUKS UUID
+cryptsetup luksChangeUUID /dev/sdX2
+
+# Open rotated LUKS container
+cryptsetup open /dev/sdX2 clone_crypt
+
+# Rotate BTRFS Filesystem UUID
+btrfstune -U random /dev/mapper/clone_crypt
+` ` `
+
+With the UUID collision resolved, both the rescued image and the fallback clone were mounted concurrently. The primary drive was successfully re-imaged from the rescued file.
+
 **Restoration:**
 The primary drive was re-imaged from the captured filesystem image with the clone drive mounted and standing by. Re-image succeeded. The clone drive was subsequently updated to reflect the restored system state.
 

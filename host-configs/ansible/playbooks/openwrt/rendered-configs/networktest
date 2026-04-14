@@ -1,0 +1,9 @@
+## Note on Networktest configuration:
+
+Given the large amount of secrets, including MAC addresses and information on internal network topology, the original tests were redacted and removed; the following hashes represent the verification from the original and the rendered configuration (after removing the newly created DUID line), which proves the Ansible Playbook suceeds at recreating it.
+
+
+2627de4f25f53dd9a865d0e925c1377f297cf23872441e837c1ec54bd5ea4f3e  networktest
+
+
+2627de4f25f53dd9a865d0e925c1377f297cf23872441e837c1ec54bd5ea4f3e  networkoriginal

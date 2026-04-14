@@ -1,0 +1,63 @@
+- name: Change LED color for Routers - Ansible Manageability Check 
+  hosts: routers, fallback
+  gather_facts: yes
+  ## All vars are temporary, they will be set per-host.
+  vars:
+    secrets_file: "./openwrt-secrets.yml"
+    blink_name: "Bat0_Success"
+    color: "LED0_Red"
+    interface: "bat0"
+    trigger: "netdev"
+    change_uci_state: "set"
+    led_mode: "led.mode"
+    led_modes:
+      - "rx"
+      - "tx"
+    # We're using an array here to have the logic built-in for a later introduction of host_vars
+    led_definitions:
+      - { setting: "led", value: "led" }
+      - { setting: "led.name", value: "{{ blink_name }}" }
+      - { setting: "led.sysfs", value: "{{ color }}" }
+      - { setting: "led.dev", value: "{{ interface }}" }
+      - { setting: "led.trigger", value: "{{ trigger }}" }
+  tasks:
+    - name: Load Encrypted SOPS Variables
+      community.sops.load_vars:
+        file: "{{ secrets_file }"
+      tags: [always]
+    - name: Reset LED settings
+      shell: |
+        uci delete system.led
+      ignore_errors: yes
+      tags: [reset, never]
+    - name: Register Existing LED settings
+      shell: |
+        uci show system.led || true
+      tags: [always]
+      register: previous_led
+    - name: Configure LED settings
+      shell: |
+        {% for item in led_definitions %}
+        uci {{ change_uci_state }} system.{{ item.setting }}={{ item.value }}
+        {% endfor %}
+        uci delete system.led.mode
+        {% for mode in led_modes %}
+        uci add_list system.led.mode='{{ mode }}'
+        {% endfor %}
+    - name: Commit changes
+      shell: |
+        uci commit system
+        /etc/init.d/led restart
+        uci show system.led 2>&1 || true
+      register: current_led
+      tags: [always]
+    # ─────────────ARTIFACT BUILDING───────────────────────────────────────────
+
+    - name: Change LED | Render Playbook Artifact
+      template:
+        src: templates/led-report.j2
+        dest: "{{ artifacts_dir }}/{{ inventory_hostname }}-{{ ansible_date_time.date }}-{{ ansible_date_time.time }}-led-change-report.md"
+      delegate_to: localhost
+      become: false
+      when: current_led.changed
+      tags: [always]

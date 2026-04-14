@@ -1,0 +1,38 @@
+#ENC[AES256_GCM,data:+22I3x2mDAI4f7xlXrQewBuQvlDIoYLKgFeBEymhqLa5vhoN,iv:VPSDBm+XdQaYyXy4Gt058nAp6ix0GKjrB8O8hN/11wU=,tag:IdPy6Ij6od+C0RXWL/k7EA==,type:comment]
+#ENC[AES256_GCM,data:AeM7qdai5knZGjcITaBrADWY7nex/45qCbL7OQ==,iv:TzrHQRvLIGQqhbwtGag+bNv0/uQVQCMF81tO+QnHTFU=,tag:zmV3Dld2G6ziPtkjRAydwQ==,type:comment]
+root_password: ENC[AES256_GCM,data:88v9YVkogd3LGQICn/+mVppsr9wP6Ko3fWtz9mxNujaXD0xVryxWvIbRN/4k0zCC2gZPutw16gNt/A296HIq7A==,iv:CjsUC3i8ymxOt00fbnBe2xWRlCVjBK6La/udB0f2y8Y=,tag:K0RuQUd0Ruq6MsdWw91NSQ==,type:str]
+ansible_ssh_private_key_file: ENC[AES256_GCM,data:MaxhLV2dhDQUnvlR3vpfNCKZErZEKUXjh5wrqQ==,iv:yazdHgYLtFXGVj5Or+MYUODC8wSAxUJ9av+80tNmOfU=,tag:jsBjXfuKYk5LN0p18+AYNw==,type:str]
+#ENC[AES256_GCM,data:VaMz3g+V4+nueHtTkCthHiL8g+L8y59CwuYResI=,iv:VqWBHKiqV7s4yFNwR+mCUINNp+t8hbDkffi3gQfVprQ=,tag:JCI+i99q2Mjxlxp2rT9QwQ==,type:comment]
+ansible_host: ENC[AES256_GCM,data:AeHl6kinp1wN5kEAPEDoZw==,iv:5MFTvlBex1z/UXBTcdESm4yTdtkh/dIPGTQbhcJ3XzM=,tag:fyP/b6GGvkhkxqOEjsSw9Q==,type:str]
+request_ip: ENC[AES256_GCM,data:kUYaNHOq9rLnIw==,iv:3ctS7dH+KeN6i1iaaDSf3z3fraYyoJ+fvF5tg25/FUA=,tag:bdpHegXBcRWxkTCb5Acsdg==,type:str]
+ansible_port: ENC[AES256_GCM,data:Hd1saMY=,iv:+Nu4QuHe+GX92trIVgWcUZtJ6NZQdHdq8xev/OZHVjI=,tag:nsG/WHFH5PSO0shJ9D6F1w==,type:int]
+ansible_user: ENC[AES256_GCM,data:GL0lIQ==,iv:XuFQsK8aoJ1Bju3wqjbtcmfC98QUvHpgKBUDOXfFmAI=,tag:2oweXa4XSUrhYPqI94hwhg==,type:str]
+ansible_transfer_method: ENC[AES256_GCM,data:xTzH,iv:Mzm4DznqKhVL66FDQIjiqL5lHhv5jDyZZDjoqAHTGh4=,tag:BqmzatfIaVHTYWdlk3GHmQ==,type:str]
+ansible_scp_extra_args: ENC[AES256_GCM,data:aB4=,iv:2ND7qpVqsTAlD+c2dy/fxVzGwaT4y6aN7DwJAgEEdjk=,tag:K710dC0kzy9ExVOjph7M+Q==,type:str]
+ansible_private_key_file: ENC[AES256_GCM,data:GLPwPUn/K5k/Jfg069WViPM/0XJF7RPMV34U5Q==,iv:gLMnFoS1+HrcRQiV5oWjP6lcgi7NjPqALqQeRxdAQg0=,tag:Y/5jTzKWLfYfQVO6AjLLrw==,type:str]
+node_role: ENC[AES256_GCM,data:+hcL7z+NAg==,iv:Fm5uw2U9A2pMg4mBiWTf9vwkuQ2K+ge6+JvXtoUtqCM=,tag:G5ZAH2E+0oSF4jEUliZL/Q==,type:str]
+#ENC[AES256_GCM,data:9bw7LLPK,iv:TUOWLrmqZjJSIMt/UMrfNmPglkh5Dmd75EmeI8ZjmXs=,tag:7O5dQt26zl4nTbnAXyDXQQ==,type:comment]
+blink_name: ENC[AES256_GCM,data:VbnbFTKLbji38D7F,iv:rFKNWQ5kAlrklEJ2sUs7p/R5huTfRU4r1BFGJ0a0pVM=,tag:lH/wVCUPc2t3SOl1LsNDTA==,type:str]
+color: ENC[AES256_GCM,data:cmlHPGzRRQ4p,iv:JWjPaLXlbnBHpk/6XCnzEyqMSWbhWMhVgdBz0cvUkJM=,tag:GCdZ5VyQ/pS/vEzYa3os3Q==,type:str]
+interface: ENC[AES256_GCM,data:h98Uug==,iv:UN1UCBUxmC52l9nFWb8duxj04QhNM2tVl+Zo0Q5fx2A=,tag:G7Q6d12W1ojVQOHMzPDwWw==,type:str]
+trigger: ENC[AES256_GCM,data:XhJmG80h,iv:jMBqW0QlZZzHJ9nhB6xnbekYAMoB34OHen3jgqXiQVk=,tag:y3+9wwzWmm3kArxUJUbdug==,type:str]
+change_uci_state: ENC[AES256_GCM,data:2YBx,iv:AF1C84hJCOyw25HVGu6cokPTAwP0Ser1eLVhGgvkwb8=,tag:XJ0P3xw8wU1iuK9uoNY+DA==,type:str]
+led_mode: ENC[AES256_GCM,data:5Y/mIp0bZpk=,iv:vxYbrf01RftfMYVOa89apyLLggO1iM/3Ceb1ifgYBKM=,tag:IXN+oNkDD6+hrXJVYPUcYw==,type:str]
+led_modes:
+    - ENC[AES256_GCM,data:P70=,iv:rJ+vTFQJv5geyTefpJXZg8g5H4ClSCuUbpRGt9buAMs=,tag:x2Sef8kPD5EJplQ/TVRrGw==,type:str]
+    - ENC[AES256_GCM,data:Ejk=,iv:C4q/Os9Mlx9uGzMm/j8pcrvTgTd7U+X8IvgwJRv34/A=,tag:beFbfoTxZn8q7epHvdwIFg==,type:str]
+sops:
+    age:
+        - recipient: age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSA3VnBVQi9pSDF0TUN2MC9q
+            SUlMSmlQVVhJWE5DNzRQL2lqWko5c1NUbVdZCmZJY0J3UDh5NVpYMllPMDRyTFBs
+            QVc3U2RBRzBKRHh5ZStYUWtESzdjeXcKLS0tIHJUODVDRjhOaW9LU3hXZmh0VXdk
+            U0d6SWVFQ1gzS0RnZG94MTZMWnFqUVEKuD22qC7cdugtmSurh1T+sV9ZddSGFF+E
+            YKXIbkgg2XHDBOEF8gQoN2TH9QmTlgtCxxGhmCXNs/IlseL1g2j/DQ==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2026-04-16T18:25:18Z"
+    mac: ENC[AES256_GCM,data:IOIXeEU8BitL+Lwz+1AmU1KyG80pjoXQsNZKr6oJz2Eor9rC0NPS5waqiYykxXvmxzbuou3RjrGtdAJBwlx/UfK3ezzy8F7j08Z3935I2ZG2lZlds6QDwq+V8pXHk2pg/JFDhPZq7KpSQJZ8pxzYxOVRC95foLZ4qFUBNxxOB5A=,iv:ynZ2tiW2/pX3DPA36dkwh3PzKhEVkRLc261XsE7o0Pk=,tag:N7EScPEQJUc/hx8lqXRnmw==,type:str]
+    unencrypted_suffix: _unencrypted
+    version: 3.12.2

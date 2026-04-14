@@ -1,0 +1,214 @@
+---
+# ==============================================================================
+# Mesh Node Credential Rotation & Security Hardening
+# ==============================================================================
+# Context: Infrastructure as Code Showcase (tobon.dev)
+# Target:  OpenWRT batman-adv mesh backhaul
+#
+# Execution:
+#   Normal Run (Idempotent): ansible-playbook sec-hardening.yml
+#   Force Rotation:          ansible-playbook sec-hardening.yml -e "rotate=true"
+# ==============================================================================
+
+- name: Secure Mesh Nodes
+  hosts: routers, fallback
+  gather_facts: yes
+  vars:
+    rotate: false # Defaults to false unless passed via CLI
+    sops_file: "./host_vars/{{ inventory_hostname }}.sops.yml"
+    plain_file: "./host_vars/{{ inventory_hostname }}.yml"
+    secrets_file: "./openwrt-secrets.yml"
+  tasks:
+    - name: Load Encrypted SOPS Variables
+      community.sops.load_vars:
+        file: "{{ secrets_file }}"
+      tags: [always]
+    # ── 1. STATE DETECTION ────────────────────────────────────────────
+    - name: State | Check for encrypted SOPS vars
+      stat:
+        path: "{{ sops_file }}"
+      register: sops_stat
+      delegate_to: localhost
+      tags: [always]
+
+    - name: State | Check for plaintext vars (Bootstrap)
+      stat:
+        path: "{{ plain_file }}"
+      register: plain_stat
+      delegate_to: localhost
+      tags: [always]
+
+    - name: State | Validate Configuration
+      fail:
+        msg: "CRITICAL: No host_vars found for {{ inventory_hostname }}. Expected either .yml or .sops.yml"
+      when: not sops_stat.stat.exists and not plain_stat.stat.exists
+      tags: [always]
+
+    # Bypass the entire run if it's already encrypted and we aren't rotating
+    - name: Playbook Logic
+      when: (not sops_stat.stat.exists) or (rotate | bool)
+      block:
+        # ── LOCAL SETUP & STAGING ─────────────────────────────────────────
+        - name: Ensure local workspace directories exist
+          file:
+            path: "{{ item }}"
+            state: directory
+          loop:
+            - "{{ keys_dir }}"
+            - "./host_vars"
+            - "./rendered-configs"
+            - "{{ artifacts_dir }}"
+          delegate_to: localhost
+          run_once: true
+          become: false
+          tags: [always]
+
+        - name: Pre-flight | Verify SOPS and AGE environment
+          command: "sops --version"
+          delegate_to: localhost
+          run_once: true
+          become: false
+          tags: [always]
+          changed_when: false
+
+        - name: Pre-flight | Fetch current authorized_keys
+          fetch:
+            src: /root/.ssh/authorized_keys
+            dest: "./rendered-configs/{{ inventory_hostname }}-authorized_keys.backup"
+            flat: yes
+          tags: [always]
+
+        - name: Staging | Generate a random 64-character alphanumeric root password
+          set_fact:
+            new_root_password: "{{ lookup('password', '/dev/null length=64 chars=ascii_letters,digits') }}"
+          no_log: true
+          tags: [always]
+
+        - name: Staging | Generate staged SSH Keypair
+          community.crypto.openssh_keypair:
+            path: "{{ keys_dir }}/{{ inventory_hostname }}_staged_id_ed25519"
+            type: ed25519
+            comment: "ansible-generated-{{ inventory_hostname }}-{{ ansible_date_time.time }}"
+            state: present
+            force: true
+          delegate_to: localhost
+          tags: [always]
+
+        - name: Staging | Read generated public key
+          slurp:
+            src: "{{ keys_dir }}/{{ inventory_hostname }}_staged_id_ed25519.pub"
+          register: staged_pubkey_raw
+          delegate_to: localhost
+          tags: [always]
+
+        - name: Staging | Set public key fact
+          set_fact:
+            staged_pubkey: "{{ staged_pubkey_raw['content'] | b64decode | trim }}"
+          tags: [always]
+
+        # ── THE SHADOW BUILD (Local Validation) ───────────────────────────
+        - name: Shadow Build | Read existing keys
+          slurp:
+            src: "./rendered-configs/{{ inventory_hostname }}-authorized_keys.backup"
+          register: existing_keys_raw
+          delegate_to: localhost
+          tags: [always]
+
+        - name: Shadow Build | Render Security Artifact
+          template:
+            src: templates/sec-hardening.j2
+            dest: "{{ artifacts_dir }}/{{ inventory_hostname }}-{{ ansible_date_time.date }}-{{ ansible_date_time.time }}-credential-rotation-report.md"
+          delegate_to: localhost
+          become: false
+          tags: [always]
+
+        # ── REMOTE EXECUTION ──────────────────────────────────────────────
+        - name: Deployment | SSH - authorized_keys
+          when: "'render' not in ansible_run_tags"
+          block:
+            - name: Execution | Deploy new public key to authorized_keys
+              copy:
+                src: "{{ keys_dir }}/{{ inventory_hostname }}_staged_id_ed25519.pub"
+                dest: /root/.ssh/authorized_keys
+                mode: '0600'
+                owner: root
+                group: root
+              tags: [rotate-keys]
+
+            - name: Execution | Update root password
+              shell: "echo -e '{{ new_root_password }}\n{{ new_root_password }}' | passwd root"
+              no_log: true
+              when: not ansible_check_mode
+              tags: [rotate-password]
+
+          # ── ROLLBACK PROTECTION ─────────────────────────────────────────
+          rescue:
+            - name: Rollback | Revert authorized_keys from local backup
+              copy:
+                src: "./rendered-configs/{{ inventory_hostname }}-authorized_keys.backup"
+                dest: /root/.ssh/authorized_keys
+                mode: '0600'
+              when: not ansible_check_mode
+              ignore_errors: true
+
+            - name: Rollback | Revert root password
+              shell: "echo -e '{{ root_password | default ('') }}\n{{ root_password | default ('') }}' | passwd root"
+              no_log: true
+              when: not ansible_check_mode
+              tags: [rotate-password]
+
+            - name: Execution Failed | Halting Play
+              fail:
+                msg: "CRITICAL: Execution failed on {{ inventory_hostname }}. Authorized keys were rolled back. Local staging was NOT promoted."
+
+        # ── LOCAL COMMIT & CLEANUP ────────────────────────────────────────
+        - name: Local Commit Block
+          when: "not ansible_check_mode and 'render' not in ansible_run_tags"
+          block:
+            - name: Commit | Promote staged SSH keys to production
+              copy:
+                src: "{{ keys_dir }}/{{ inventory_hostname }}_staged_id_ed25519{{ item }}"
+                dest: "{{ keys_dir }}/{{ inventory_hostname }}_id_ed25519{{ item }}"
+                mode: preserve
+                remote_src: false
+              loop: ['', '.pub']
+              delegate_to: localhost
+
+            - name: Commit | Remove staged SSH keys
+              file:
+                path: "{{ keys_dir }}/{{ inventory_hostname }}_staged_id_ed25519{{ item }}"
+                state: absent
+              loop: ['', '.pub']
+              delegate_to: localhost
+              tags: [rotate-keys]
+
+            # Day 0: Insert management header before encrypting
+            - name: Commit (Bootstrap) | Add management header
+              lineinfile:
+                path: "{{ plain_file }}"
+                insertbefore: BOF
+                line: "# Managed by Ansible - SOPS encrypted"
+              delegate_to: localhost
+              when: plain_stat.stat.exists
+            # Day 0: Encrypt the plaintext file in-place and rename it.
+            - name: Commit (Bootstrap) | Encrypt plaintext host_vars
+              shell: "sops -e -i {{ plain_file }} && mv {{ plain_file }} {{ sops_file }}"
+              delegate_to: localhost
+              when: plain_stat.stat.exists
+
+            # Day N: Inject the new secrets directly into the encrypted file.
+            - name: Commit (Rotation) | Update SOPS file in-place
+              # We use the sops CLI directly to perform an atomic key update (merging)
+              shell: |
+                sops --set '["root_password"] "{{ new_root_password }}"' {{ sops_file }}
+                sops --set '["ansible_private_key_file"] "{{ keys_dir }}/{{ inventory_hostname }}_id_ed25519"' {{ sops_file }}
+              delegate_to: localhost
+              no_log: true
+              when: plain_stat.stat.exists or (rotate | bool)
+
+            - name: Commit | Securely remove authorized_keys backup.
+              file:
+                path: "./rendered-configs/{{ inventory_hostname }}-authorized_keys.backup"
+                state: absent
+              delegate_to: localhost
+              tags: [rotate-keys, rotate-password]
