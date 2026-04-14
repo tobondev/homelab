@@ -1,0 +1,85 @@
+---
+# ==============================================================================
+# SSH Port Rotation Playbook
+# ==============================================================================
+# Context: Infrastructure as Code Showcase (tobon.dev)
+# Target:  Rotate active SSH port away from temporary provisioned port
+#
+# Execution:
+#   ansible-playbook openwrt-rotate-ssh.yml -e secrets_file=openwrt-secrets.yml
+## ==============================================================================
+
+- name: Secure Mesh Nodes - Rotate OpenSSH Port
+  hosts: routers, fallback
+  gather_facts: yes
+  vars:
+    secrets_file: "openwrt-secrets.yml"
+    sops_file: "./host_vars/{{ inventory_hostname }}.sops.yml"
+  tasks:
+    - name: Load encrypted SOPS variables
+      community.sops.load_vars:
+        file: "{{ secrets_file }}"
+      tags: [always]
+
+    - name: Verify new_ssh_port variable is defined
+      assert:
+        that:
+          - new_ssh_port is defined
+        fail_msg: "Variable 'new_ssh_port' was not found in the SOPS file."
+    - name: Set ports
+      set_fact:
+        old_ssh_port: "{{ ansible_port | default(22) }}"
+    - name: Capture and hash original and new SSH ports
+      set_fact:
+        old_port_hash: "{{ old_ssh_port | string | hash('sha256') }}"
+        new_port_hash: "{{ new_ssh_port | string | hash('sha256') }}"
+    - name: Update OpenSSH port in sshd_config
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?Port\s+.*'
+        line: "Port {{ new_ssh_port }}"
+        state: present
+        validate: '/usr/sbin/sshd -t -f %s'
+      register: sshd_config
+
+    - name: Restart OpenSSH to apply new port (Async/Fire-and-Forget)
+      shell: /etc/init.d/sshd restart
+      async: 10
+      poll: 0
+      when: sshd_config.changed
+
+    - name: Update Ansible inventory to use the new port
+      set_fact:
+        ansible_port: "{{ new_ssh_port }}"
+      when: sshd_config.changed
+
+    - name: Wait for SSH to come back on the new port
+      wait_for_connection:
+        delay: 5
+        timeout: 60
+      vars:
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=accept-new'
+      when: sshd_config.changed
+
+    - name: Final confirmation of connectivity
+      command: uptime
+      changed_when: false
+
+    - name: Print success message
+      debug:
+       msg: "Success! Router {{ inventory_hostname }} is now responding on SSH port {{ new_ssh_port }}."
+
+    - name: Render local security artifact upon successful rotation
+      template:
+        src: templates/ssh-reprovision.j2
+        dest: "{{ artifacts_dir }}/{{ inventory_hostname }}-{{ ansible_date_time.date }}-{{ ansible_date_time.time }}-ssh-rotation.md"
+      delegate_to: localhost
+      become: false
+      when: sshd_config.changed
+
+    - name: Commit (Rotation) | Update SOPS file in-place
+      shell: |
+        sops --set '["ansible_port"] {{ new_ssh_port }}' {{ sops_file }}
+      delegate_to: localhost
+      no_log: true
+      when: sshd_config.changed

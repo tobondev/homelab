@@ -1,0 +1,28 @@
+creation_rules:
+  - path_regex: \.env$
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  - path_regex: \.conf$
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  - path_regex: \.cfg$
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  - path_regex: \.sanitized$
+    encrypted_regex: ':.+'
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  - path_regex: \.(yaml|yml)$
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  - path_regex: \.(log|timing)$
+    format: binary
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  - path_regex: \.bin$
+    format: binary
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  - path_regex: \.(tar|tar.gz)$
+    format: binary
+  # SSH keys
+  - path_regex: \.secret$
+    encrypted_regex: ^(data|stringData)$
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  # SSH public keys - intentionally NOT encrypted
+  - path_regex: secrets/ssh_keys/.*\.pub$
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+    enc: noop

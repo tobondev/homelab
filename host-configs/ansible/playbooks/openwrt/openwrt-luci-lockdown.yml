@@ -1,0 +1,42 @@
+---
+# ==============================================================================
+# Mesh Node LuCI Lockdown
+# ==============================================================================
+# Context: Infrastructure as Code Showcase (tobon.dev)
+# Target:  OpenWRT LuCI interface lockdown to management interface
+#
+# Execution:
+#   ansible-playbook openwrt-luci-lockdown.yml
+## ==============================================================================
+
+- name: Lock Down LuCI
+  hosts: routers, fallback
+  gather_facts: yes
+  vars:
+    secrets_file: "openwrt-secrets.yml"
+  tasks:
+    - name: Load encrypted SOPS variables
+      community.sops.load_vars:
+        file: "{{ secrets_file }}"
+    - name: Lock down LuCI
+      shell: |
+        # Hardening uhttpd (LuCI)
+        uci -q delete uhttpd.main.listen_http || true
+        uci -q delete uhttpd.main.listen_https || true
+        uci add_list uhttpd.main.listen_https='{{ request_ip }}:443'
+        uci add_list uhttpd.main.listen_http='{{ request_ip }}:80'
+        uci set uhttpd.main.redirect_https='1' || true
+        uci commit uhttpd
+        /etc/init.d/uhttpd restart
+      register: luci_interface
+        # ── ARTIFACT BUILDING────────────────────────────────────────────────
+
+    - name: LuCI Lockdown | Render Security Artifact
+      template:
+        src: templates/luci-lockdown.j2
+        dest: "{{ artifacts_dir }}/{{ inventory_hostname }}-{{ ansible_date_time.date }}-{{ ansible_date_time.time }}-luci-lockdown-report.md"
+      delegate_to: localhost
+      become: false
+      tags: [render]
+      when: luci_interface.changed
+

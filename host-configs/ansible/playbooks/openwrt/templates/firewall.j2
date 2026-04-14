@@ -1,0 +1,236 @@
+# ==========================================
+# DEFAULT POLICIES
+# ==========================================
+config defaults
+	option input 'REJECT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+	option synflood_protect '1'
+
+# ==========================================
+# ZONE DEFINITIONS
+# ==========================================
+
+# LAN Zone (Trusted)
+config zone
+	option name 'lan'
+	list network 'lan'
+	option input 'ACCEPT'
+	option output 'ACCEPT'
+	option forward 'ACCEPT'
+
+# WAN Zone (Untrusted / Internet)
+config zone
+	option name 'wan'
+	list network 'wan'
+	list network 'wan6'
+	option input 'REJECT' 
+	option output 'ACCEPT'
+	option forward 'REJECT'
+	option masq '1'
+	option mtu_fix '1'
+
+# Guest Zone (Isolated)
+config zone
+	option name 'guest'
+	list network 'guest'   
+	option input 'REJECT'  
+	option output 'ACCEPT'
+	option forward 'REJECT' # Blocks cross-VLAN traffic
+
+# IoT Zone (Isolated)
+config zone
+	option name 'iot'
+	list network 'iot'      
+	option input 'REJECT'  
+	option output 'ACCEPT'
+	option forward 'REJECT' # Blocks cross-VLAN traffic
+
+# TV Zone (Isolated)
+config zone
+	option name 'tv'
+	list network 'tv'
+	option input 'REJECT'
+	option output 'ACCEPT'
+	option forward 'REJECT'
+
+
+# ==========================================
+# INTER-ZONE FORWARDING
+# ==========================================
+
+# Allow all zones to reach the internet
+config forwarding
+	option src 'lan'
+	option dest 'wan'
+
+config forwarding
+	option src 'guest'
+	option dest 'wan'
+
+config forwarding
+	option src 'iot'
+	option dest 'wan'
+
+config forwarding
+	option src 'tv'
+	option dest 'wan'
+
+# Allow LAN (Trusted) to initiate connections into IoT and TV zones
+config forwarding
+	option src 'lan'
+	option dest 'iot'
+
+config forwarding
+	option src 'lan'
+	option dest 'tv'
+
+# ==========================================
+# CONTROL PLANE (Management)
+# ==========================================
+# Allow LAN (Trusted) to access the Control Plane
+config forwarding
+	option src 'lan'
+	option dest 'ctrl'
+# Allow Control Plane nodes to get IPs via DHCP
+config rule
+	option name 'Allow-ctrl-DHCP'
+	option src 'ctrl'
+	option dest_port '67'
+	option proto 'udp'
+	option target 'ACCEPT'
+
+config zone
+	option name 'ctrl'
+	list network 'ctrl'  
+	option input 'REJECT'   # Blocks direct access from within the control plane
+	option output 'ACCEPT'  # Allows stateful replies back to the LAN
+	option forward 'REJECT' # Blocks all cross-VLAN and WAN traffic
+
+
+# ==========================================
+# CUSTOM RULES
+# ==========================================
+# Hijack all DNS requests from clients.
+config redirect
+	option name 'Hijack-DNS-UDP'
+	option src '*'
+	option src_dport '53'
+	option dest_port '53'
+	option target 'DNAT'
+
+# Allow Isolated Zones to get IPs (DHCP) and resolve websites (DNS)
+config rule
+	option name 'Allow-Guest-DHCP-DNS'
+	option src 'guest'
+	option dest_port '53 67'
+	option proto 'tcp udp'
+	option target 'ACCEPT'
+config rule
+	option name 'Allow-TV-DHCP-DNS'
+	option src 'tv'
+	option dest_port '53 67'
+	option proto 'tcp udp'
+	option target 'ACCEPT'
+config rule
+	option name 'Allow-IoT-DHCP-DNS'
+	option src 'iot'
+	option dest_port '53 67'
+	option proto 'tcp udp'
+	option target 'ACCEPT'
+
+
+# --- Standard OpenWRT WAN Rules ---
+
+config rule
+	option name 'Allow-DHCP-Renew'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '68'
+	option target 'ACCEPT'
+	option family 'ipv4'
+
+config rule
+	option name 'Allow-Ping'
+	option src 'wan'
+	option proto 'icmp'
+	option icmp_type 'echo-request'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-IGMP'
+	option src 'wan'
+	option proto 'igmp'
+	option family 'ipv4'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-DHCPv6'
+	option src 'wan'
+	option proto 'udp'
+	option dest_port '546'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-MLD'
+	option src 'wan'
+	option proto 'icmp'
+	option src_ip 'fe80::/10'
+	list icmp_type '130/0'
+	list icmp_type '131/0'
+	list icmp_type '132/0'
+	list icmp_type '143/0'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Input'
+	option src 'wan'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	list icmp_type 'router-solicitation'
+	list icmp_type 'neighbour-solicitation'
+	list icmp_type 'router-advertisement'
+	list icmp_type 'neighbour-advertisement'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ICMPv6-Forward'
+	option src 'wan'
+	option dest '*'
+	option proto 'icmp'
+	list icmp_type 'echo-request'
+	list icmp_type 'echo-reply'
+	list icmp_type 'destination-unreachable'
+	list icmp_type 'packet-too-big'
+	list icmp_type 'time-exceeded'
+	list icmp_type 'bad-header'
+	list icmp_type 'unknown-header-type'
+	option limit '1000/sec'
+	option family 'ipv6'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-IPSec-ESP'
+	option src 'wan'
+	option dest 'lan'
+	option proto 'esp'
+	option target 'ACCEPT'
+
+config rule
+	option name 'Allow-ISAKMP'
+	option src 'wan'
+	option dest 'lan'
+	option dest_port '500'
+	option proto 'udp'
+	option target 'ACCEPT'

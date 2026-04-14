@@ -1,0 +1,5 @@
+### Comparison between the original Wireless configuration file (wireless) and the file produced by ansible with its templating engine (rendered-configs/Portal_ansible-wireless.conf). The values in both files have been replaced with encrypted values by using an encrypted SOPS file as the template; this was determinede to be the best way to protect the confidentiality of the production wireless configuration, while still showing that the template-filling was successful.
+
+
+f5df3a88400c2047d99d0ec8a5ea033b6b59d215c34fc7e382fb59fda7d5a4ef  wireless
+f5df3a88400c2047d99d0ec8a5ea033b6b59d215c34fc7e382fb59fda7d5a4ef  rendered-configs/Portal_Ansible-wireless.conf

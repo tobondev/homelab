@@ -6,3 +6,5 @@ This log captures the significant architectural decisions for the homelab enviro
 |:---|:---|:---|:---|
 | 001 | 2026-03-24 | [Centralize L3 services on OPNsense (Lenovo M920q)](adrs/adr-2026-03-24-001-centralize-l3-opnsense.md) | Accepted |
 | 002 | 2026-04-03 | [Adopt source-level patching and automated upstream monitoring](adrs/adr-2026-04-03-002-hybrid-patching-posture.md) | Accepted |
+| 003 | 2026-04-05 | [Ansible-Driven OpenWRT Provisioning for batman-adv Mesh](adrs/adr-2026-04-05-003-ansible-driven-openwrt-provisioning-for-batman-adv-mesh.md) | Implemented |
+| 004 | 2026-04-10 | [Implementing SOPS as the Production Secrets Management](adrs/adr-2026-04-10-001-implementing-sops-as-the-production-secrets-management.md) | Implemented |

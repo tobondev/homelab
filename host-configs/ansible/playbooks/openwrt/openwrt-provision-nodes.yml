@@ -1,0 +1,282 @@
+---
+# Provision Mesh Node (OpenWRT batman-adv mesh)
+#
+# Usage:
+#   ansible-playbook openwrt-provision-node.yml -e secrets_file=openwrt-fsecrets.yml
+#   ansible-playbook openwrt-provision-node.yml -e secrets_file=openwrt-secrets-test.yml
+#
+# Tags:
+#   --tags render   — render templates locally, sets UCI parameters,
+#                     fetches them to local and then reverts them
+#   --tags debug    — also print UCI state after commit
+#
+# node_role must be set in the hosts file:
+#   node_role: ap_only
+#
+#     The node is both a DHCP and batman-adv client node.
+#     This role is server-agnostic: it will behave exactly the same
+#     same regardless of whether the L3 functions are provided by
+#     a Standalone OpenWRT node or by the OPNsense core.
+#     It's WAN functions are disabled, and the LAN is bridged to
+#     both physical interfaces. Firewall, DHCP and DNS are disabled.
+#     Regardless of L3 controller, it requires a node configured
+#     in the batman-adv "server" role.
+#
+#  node_role: opnsense
+#
+#     The OpenWRT main node acts as a batman-adv server in dumb-AP mode.
+#     OPNsense upstream handles routing, DHCP, firewall, and DNS.
+#     Bridge uplink ports are wan.<vlan> (tagged from OPNsense trunk).
+#     All logical interfaces are proto=none except ctrl (proto=dhcp).
+#     Local dnsmasq, firewall, and odhcpd are disabled.
+#
+#  node_role: standalone
+#     The OpenWRT main node acts as the L3 controller, as well as
+#     as a batman-adv server. It handles routng, DHCP, firewall
+#     and DNS. This configuration injects a firewall template
+#     which defines VLAN segmentation, and the DHCP server configuration
+#     assigns IP ranges to all VLANs
+#     dumb-AP mode.
+
+- name: Provision Mesh Nodes
+  hosts: routers, fallback
+  gather_facts: yes
+
+  tasks:
+    - name: Load encrypted SOPS variables
+      community.sops.load_vars:
+        file: "{{ secrets_file | default('openwrt-secrets.yml') }}"
+      tags: [always]
+
+    # -----------------------------------------------------------------------
+    # Local render — always runs first for inspection before remote changes
+    # -----------------------------------------------------------------------
+
+    - name: Ensure local debug directory exists
+      file:
+        path: "./rendered-configs"
+        state: directory
+      delegate_to: localhost
+      run_once: true
+      become: false
+      tags: [always]
+
+    - name: Render wireless configuration locally
+      template:
+        src: templates/wireless.j2
+        dest: "./rendered-configs/{{ inventory_hostname }}-wireless.conf"
+      delegate_to: localhost
+      become: false
+      tags: [never, render, debug]
+
+    - name: Render firewall configuration locally
+      template:
+        src: templates/firewall.j2
+        dest: "./rendered-configs/{{ inventory_hostname }}-firewall.conf"
+      delegate_to: localhost
+      become: false
+      tags: [never, render, debug]
+
+    # -----------------------------------------------------------------------
+    # Remote configuration
+    # -----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
+    # Commit changes: only runs with no tags.
+    # -----------------------------------------------------------------------
+
+    - name: Deploy Wireless Configuration
+      template:
+        src: templates/wireless.j2
+        dest: /etc/config/wireless
+
+    - name: Deploy Firewall Configuration
+      template:
+        src: templates/firewall.j2
+        dest: /etc/config/firewall
+      when: node_role == 'standalone'
+
+    - name: Configure NTP service to listen to OPNSense router
+      shell: |
+        uci delete system.ntp.server
+        uci add_list system.ntp.server='{{ ctrl_ip }}'
+        uci set system.ntp.enable_server=0
+        # Commit and restart are handled by the commit tasks below
+      when: node_role != 'standalone'
+    - name: Configure Network and DHCP via UCI
+      shell: |
+        # ── BATMAN-ADV (Dynamic Logic) ──────────────────────────────────
+        uci set network.bat0=interface
+        uci set network.bat0.proto='batadv'
+        uci set network.bat0.routing_algo='BATMAN_V'
+        # If it's ap_only, it's a client. Otherwise, it must be the server.
+        uci set network.bat0.gw_mode='{{ "client" if node_role == "ap_only" else "server" }}'
+        uci set network.bat0.hop_penalty='30'
+        uci set network.bat0.bridge_loop_avoidance='1'
+        uci set network.bat0.multicast_mode='1'
+
+        # ── MESH HARD INTERFACE ───────────────────────────────────────────
+        uci set network.{{ mesh_interface }}=interface
+        uci set network.{{ mesh_interface }}.proto='batadv_hardif'
+        uci set network.{{ mesh_interface }}.master='bat0'
+        uci set network.{{ mesh_interface }}.mtu='1532'
+        uci set network.{{ mesh_interface }}.throughput_override='400mbit'
+
+        # ── VLAN BRIDGES ──────────────────────────────────────────────────
+        {% for name, vlan in [(lan_interface, lan_tag), (tv_interface, tv_tag), (iot_interface, iot_tag), (guest_interface, guest_tag), (ctrl_interface, ctrl_tag)] %}
+        uci set network.br_{{ name }}=device
+        uci set network.br_{{ name }}.name='br_{{ name }}'
+        uci set network.br_{{ name }}.type='bridge'
+        uci set network.br_{{ name }}.bridge_empty='1'
+        uci set network.br_{{ name }}.stp='1'
+        uci set network.br_{{ name }}.igmp_snooping='1'
+        {% if node_role == 'opnsense' %}
+        # Main node, upstream routing. Tagged trunks from OPNsense.
+        uci add_list network.br_{{ name }}.ports='wan.{{ vlan }}'
+
+        {% elif node_role == 'standalone' %}
+        # Main node, local routing. Add the physical LAN port to the LAN bridge.
+        {% if name == lan_interface %}
+        uci add_list network.br_{{ name }}.ports='lan'
+        {% endif %}
+
+        {% else %}
+        # ap_only node. Act as a dumb switch for hardwired clients.
+        {% if name == lan_interface %}
+        uci add_list network.br_{{ name }}.ports='lan'
+        uci add_list network.br_{{ name }}.ports='wan'
+        {% endif %}
+        {% endif %}
+        uci add_list network.br_{{ name }}.ports='bat0.{{ vlan }}'
+        {% endfor %}
+
+        # ── LOGICAL INTERFACES ────────────────────────────────────────────
+        {% if node_role != 'standalone' %}
+        # DHCP client mode: L2 passthrough only, no IP config, regardless of batman-adv role
+        {% for name in [lan_interface, guest_interface, iot_interface, tv_interface, ctrl_interface] %}
+        uci set network.{{ name }}=interface
+        uci set network.{{ name }}.device='br_{{ name }}'
+        uci set network.{{ name }}.proto='{{ "dhcp" if name == ctrl_interface else "none" }}'
+        uci set network.{{ name }}.multicast_querier='1'
+        uci set network.{{ name }}.multicast_to_unicast='1'
+        uci set network.{{ name }}.multicast_router='2'
+        {% endfor %}
+
+        # Disable local DHCP/DNS — OPNsense handles it
+        uci set dhcp.lan.ignore='1'
+        {% else %}
+        # Standalone mode: this node is the router and DHCP server
+        {% for name, subnet, netmask, ip_start, ip_end in [
+            (lan_interface,   lan_ip,   lan_netmask,   lan_ip_start,   lan_ip_end),
+            (guest_interface, guest_ip, guest_netmask, guest_ip_start, guest_ip_end),
+            (iot_interface,   iot_ip,   iot_netmask,   iot_ip_start,   iot_ip_end),
+            (tv_interface,    tv_ip,    tv_netmask,    tv_ip_start,    tv_ip_end),
+            (ctrl_interface,  ctrl_ip,  ctrl_netmask,  ctrl_ip_start,  ctrl_ip_end)] %}
+        uci set network.{{ name }}=interface
+        uci set network.{{ name }}.device='br_{{ name }}'
+        uci set network.{{ name }}.proto='static'
+        uci set network.{{ name }}.ipaddr='{{ subnet }}'
+        uci set network.{{ name }}.netmask='{{ netmask }}'
+        uci set network.{{ name }}.multicast_querier='1'
+        uci set network.{{ name }}.multicast_to_unicast='1'
+        uci set network.{{ name }}.multicast_router='2'
+        uci set dhcp.{{ name }}=dhcp
+        uci set dhcp.{{ name }}.interface='{{ name }}'
+        uci set dhcp.{{ name }}.start='{{ ip_start }}'
+        uci set dhcp.{{ name }}.limit='{{ ip_end }}'
+        uci set dhcp.{{ name }}.leasetime='12h'
+        uci set dhcp.{{ name }}.dhcpv4='server'
+        uci set dhcp.{{ name }}.dhcpv6='disabled'
+        {% endfor %}
+        {% endif %}
+
+        # ── HOUSEKEEPING ──────────────────────────────────────────────────
+        uci set attendedsysupgrade.client.login_check_for_upgrades='0'
+      tags: [always]
+    # -----------------------------------------------------------------------
+    # Render verification — run with --tags render to save locally and revert
+    # -----------------------------------------------------------------------
+
+    - name: Save changed settings into files.
+      shell: |
+        {% for setting in ['network', 'dhcp'] %}
+        uci show {{ setting }} > /tmp/{{ inventory_hostname }}-rendered-{{ setting }}
+        {% endfor %}
+      tags: [never, render]
+
+    - name: Fetch changed settings from host
+      fetch:
+        src: "/tmp/{{ inventory_hostname }}-rendered-{{ item }}"
+        dest: "./rendered-configs/{{ inventory_hostname }}-rendered-{{ item }}"
+        flat: yes
+      loop:
+        - network
+        - dhcp
+      tags: [never, render]
+    - name: Revert Changes
+      shell: |
+        {% for setting in ['system', 'network', 'dhcp', 'attendedsysupgrade'] %}
+        uci revert {{ setting }}
+        {% endfor %}
+      tags: [never, render]
+    # -----------------------------------------------------------------------
+    # Commit changes: only runs with no tags.
+    # -----------------------------------------------------------------------
+    - name: Set Hostname
+      shell: |
+        uci set system.@system[0].hostname='{{ inventory_hostname }}'
+        echo '{{ inventory_hostname }}' > /proc/sys/kernel/hostname
+
+    - name: Disable and stop local network services (Only if not in Standalone Mode)
+      shell: |
+        {% for service in ['dnsmasq', 'firewall', 'odhcpd'] %}
+        /etc/init.d/{{ service }} disable
+        /etc/init.d/{{ service }} stop
+        {% endfor %}
+      when: node_role != 'standalone'
+    - name: Commit Changes
+      shell: |
+        {% for setting in ['system', 'network', 'dhcp', 'attendedsysupgrade'] %}
+        uci commit {{ setting }}
+        {% endfor %}
+
+    # -----------------------------------------------------------------------
+    # Post-commit verification — run with --tags debug to inspect
+    # -----------------------------------------------------------------------
+
+    - name: Capture committed UCI state
+      shell: |
+        echo "=== network ==="
+        uci show network
+        echo "=== dhcp ==="
+        uci show dhcp
+      register: uci_state
+      tags: [never, debug]
+    - name: Print UCI state
+      debug:
+        var: uci_state.stdout_lines
+      tags: [never, debug]
+
+    # ── ARTIFACT BUILDING ──────────────────────────────────────────────────
+
+    - name: Provisioning | Render Security Artifact
+      template:
+        src: templates/provision-report.j2
+        dest: "{{ artifacts_dir }}/{{ inventory_hostname }}-{{ ansible_date_time.date }}-{{ ansible_date_time.time }}-{{ 'RENDER-TEST-' if 'render' in ansible_run_tags else '' }}provisioning-report.md"
+      delegate_to: localhost
+      become: false
+      tags: [render, always]
+
+    # -----------------------------------------------------------------------
+    # Disconnection point — fire and forget
+    # -----------------------------------------------------------------------
+
+    - name: Apply Network Changes (Async)
+      shell: |
+        {% if node_role == 'standalone' %}
+        /etc/init.d/dnsmasq restart
+        {% else %}
+        /etc/init.d/sysntpd restart
+        {% endif %}
+        /etc/init.d/network restart
+      async: 60
+      poll: 0
