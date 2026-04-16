@@ -1,6 +1,6 @@
-# ADR 004: PLG Stack with Alloy for SIEM and IDS Integration
+# ADR 005: PLG Stack with Alloy for SIEM and IDS Integration
 
-File: adr-2026-04-04-004-plg-stack-with-alloy-for-siem-and-ids-integration.md
+File: adr-2026-04-04-005-plg-stack-with-alloy-for-siem-and-ids-integration.md
 Title: PLG Stack with Alloy for SIEM and IDS Integration
 Date: 2026-04-04
 Status: Proposed
@@ -72,4 +72,4 @@ Review-by: [YYYY-MM-DD - e.g., 6 or 12 months from Date]
 
 ---
 ## Index Registration
-> **Index Entry:** | 002 | 2026-04-04 | [PLG Stack with Alloy for SIEM and IDS Integration](adrs/adr-2026-04-04-002-plg-stack-with-alloy-for-siem-and-ids-integration.md) | Proposed |
+> **Index Entry:** | 002 | 2026-04-04 | [PLG Stack with Alloy for SIEM and IDS Integration](adrs/adr-2026-04-04-005-plg-stack-with-alloy-for-siem-and-ids-integration.md) | Proposed |

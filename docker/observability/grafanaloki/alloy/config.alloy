@@ -1,4 +1,111 @@
+// 1. Alloy Internal Logging
+// Keeps track of the pipeline's own health
 logging {
   level  = "info"
   format = "logfmt"
+}
+
+// ==========================================
+// 2. EXPORTERS (Destinations)
+// ==========================================
+
+// Forwarding logs to the local Loki container on the observability network
+loki.write "local_loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
+
+// Forwarding metrics to the local Prometheus container
+prometheus.remote_write "local_prometheus" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+// ==========================================
+// 3. RECEIVERS (OPNsense Telemetry)
+// ==========================================
+
+// Syslog listener for OPNsense Firewall, Suricata, and Wazuh alerts
+loki.source.syslog "opnsense_syslog" {
+  listener {
+    // Listening on an unprivileged port mapped in docker-compose.yml
+    address  = "0.0.0.0:5140"
+    protocol = "udp"
+  }
+  
+  // Forward the raw syslog data to our processing stage below
+  forward_to = [loki.process.opnsense_labels.receiver]
+}
+
+// Processing stage to attach our custom static labels
+loki.process "opnsense_labels" {
+  stage.static_labels {
+    values = {
+      job      = "opnsense_telemetry",
+      instance = "lenovo-m920q",
+    }
+  }
+  
+  // Forward the newly labeled logs to the final destination
+  forward_to = [loki.write.local_loki.receiver]
+}
+
+// ==========================================
+// 4. BASIC HOST METRICS 
+// ==========================================
+
+// By bind mounting /proc and /sys in docker-compose.yml, 
+// we can scrape our host's hardware metrics.
+prometheus.exporter.unix "host_system" {
+  procfs_path = "/proc"
+  sysfs_path  = "/sys"
+}
+
+// Scrape the unix exporter and forward to Prometheus
+prometheus.scrape "host_metrics" {
+  targets    = prometheus.exporter.unix.host_system.targets
+  forward_to = [prometheus.remote_write.local_prometheus.receiver]
+}
+// ==========================================
+// 5. DOCKER METRICS
+// ==========================================
+
+// Discover all running Docker containers
+discovery.docker "local_containers" {
+  host = "unix:///var/run/docker.sock" 
+  // (Note: use your tcp:// proxy address here if you chose Option 2 earlier)
+}
+
+// Intercept the targets and rename the labels before passing them on
+discovery.relabel "container_names" {
+  targets = discovery.docker.local_containers.targets
+
+  // Rule 1: Extract the container name and strip the leading slash
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)" 
+    target_label  = "container_name"
+  }
+  
+  // Rule 2 Grab the compose service name too
+  rule {
+    source_labels = ["__meta_docker_network_compose_service"]
+    target_label  = "compose_service"
+  }
+}
+
+// ==========================================
+// 6. DOCKER LOGS
+// ==========================================
+
+// Scrape the logs, using the newly relabeled targets
+loki.source.docker "docker_logs" {
+  host       = "unix:///var/run/docker.sock"
+  
+  // Targets now points to the relabeled output\
+  targets    = discovery.relabel.container_names.output 
+  
+  forward_to = [loki.write.local_loki.receiver]
 }

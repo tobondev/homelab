@@ -23,6 +23,7 @@ services:
       - --storage.tsdb.path=/prometheus
       - --storage.tsdb.retention.time=7d
       - --storage.tsdb.retention.size=2GB
+      - --web.enable-remote-write-receiver
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     networks:
