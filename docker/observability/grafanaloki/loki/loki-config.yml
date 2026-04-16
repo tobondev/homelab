@@ -29,11 +29,12 @@ schema_config:
 limits_config:
   # NOTE: Data Retention is set to 7 days.
   #       This is the default value and can be changed
-  retention_period: 168h
-  ingestion_rate_mb: 4
-  ingestion_burst_size_mb: 6
+  retention_period: 720h
+  ingestion_rate_mb: 50
+  ingestion_burst_size_mb: 100
   max_streams_per_user: 10000
   max_line_size: 256000
+  reject_old_samples_max_age: 2880h
 
 ruler:
   alertmanager_url: http://localhost:9093

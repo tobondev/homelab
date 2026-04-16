@@ -117,7 +117,7 @@ SAFE_TITLE=$(echo "$RAW_TITLE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | sed '
 
 if grep -q "{{SEQ_ID}}" "$SELECTED_TEMPLATE"; then
     # 1. Detected indexed record (ADRs, Runbooks, etc.)
-    EXISTING_COUNT=$(find "$TARGET_DIR" -maxdepth 1 -name "*${CURRENT_DATE}-*" | wc -l)
+    EXISTING_COUNT=$(find "$TARGET_DIR" -maxdepth 1 -name "*.md" | wc -l)
     SEQ_ID=$(printf "%03d" "$((EXISTING_COUNT + 1))")
     # Use the singular of the category for the prefix (e.g., 'adrs' -> 'adr')
     PREFIX=$(echo "$CATEGORY" | sed 's/s$//')
