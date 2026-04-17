@@ -36,10 +36,10 @@ Review-by: [YYYY-MM-DD - e.g., 6 or 12 months from Date]
 
 ## 4. Acceptance Criteria (measurable)
 
-- **AC-1:** Suricata threat logs from OPNsense are successfully ingested via Alloy and queryable in Grafana via Loki.
-- **AC-2:** Wazuh agent telemetry is successfully forwarded to the stack without dropped packets or pipeline backpressure.
-- **AC-3:** `docker-compose up -d` successfully deploys using only relative bind mounts and `.env` variables, with no hardcoded credentials in version control.
-- **AC-4:** Container destruction and recreation (`docker compose down -v` followed by `up`) results in zero loss of historical metric or log data.
+- **AC-1:** Suricata threat logs from OPNsense are successfully ingested via Alloy and queryable in Grafana via Loki. *(Pending)*
+- **AC-2:** Wazuh agent telemetry is successfully forwarded to the stack without dropped packets or pipeline backpressure. *(Pending Wazuh Implementation)*
+- **AC-3:** `docker-compose up -d` successfully deploys using only relative bind mounts and `.env` variables, with no hardcoded credentials in version control. *(MET: 2026-04-17)*
+- **AC-4:** Container destruction and recreation (`docker compose down -v` followed by `up`) results in zero loss of historical metric or log data. *(MET: 2026-04-17)*
 
 ## 5. Test Plan & Artifacts (links + short summary)
 

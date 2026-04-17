@@ -1,5 +1,5 @@
 networks:
-  observability: # Renamed for clarity to encompass the whole stack
+  observability: # Named to encompass the whole stack.
 
 services:
   loki:
@@ -11,26 +11,26 @@ services:
     networks:
       - observability
     volumes:
-      # Bind mounts based on your new directory structure
-      - "${LOKI_CONFIG_FILE}":/etc/loki/loki-config.yml:ro
-      - "${LOKI_DATA}":/loki
+      - "${LOKI_CONFIG_FILE}:/etc/loki/loki-config.yml:ro"
+      - "${LOKI_DATA}:/loki"
     restart: always
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
     command:
-      - --config.file=/etc/prometheus/prometheus.yml
-      - --storage.tsdb.path=/prometheus
-      - --storage.tsdb.retention.time=7d
-      - --storage.tsdb.retention.size=2GB
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--storage.tsdb.retention.size=2GB'
+      - '--web.enable-remote-write-receiver'
     ports:
       - "${PROMETHEUS_PORT:-9090}:9090"
     networks:
       - observability
     volumes:
-      - "${PROMETHEUS_CONFIG_FILE}":/etc/prometheus/prometheus.yml:ro
-      - "${PROMETHEUS_DATA}":/prometheus
+      - "${PROMETHEUS_CONFIG_FILE}:/etc/prometheus/prometheus.yml:ro"
+      - "${PROMETHEUS_DATA}:/prometheus"
     restart: always
 
   grafana:
@@ -43,8 +43,8 @@ services:
       - observability
     volumes:
       # Added your explicit grafana.ini file
-      - "${GRAFANA_INI}:/etc/grafana/grafana.ini:ro
-      - "${GRAFANA_DATA}":/var/lib/grafana
+      - "${GRAFANA_INI}:/etc/grafana/grafana.ini:ro"
+      - "${GRAFANA_DATA}:/var/lib/grafana"
     restart: always
 
   alloy:
@@ -57,14 +57,15 @@ services:
       - /etc/alloy/config.alloy
     ports:
       - "${ALLOY_PORT:-12345}:12345"
+      - "${ALLOY_LISTEN_PORT:-5140}:5140/udp"
+      - "${ALLOY_SURICATA_PORT:-5141}:5141/udp"
     networks:
       - observability
     pid: host # Required for Alloy to collect accurate host-level metrics
     volumes:
-      - "${ALLOY_CONFIG_FILE}":/etc/alloy/config.alloy:ro
-      - "${ALLOY_DATA}":/var/lib/alloy/data
-      # The following mounts give Alloy access to Docker and System metrics/logs
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - "${ALLOY_CONFIG_FILE}:/etc/alloy/config.alloy:ro"
+      - "${ALLOY_DATA}:/var/lib/alloy/data"
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Give Alloy access to Docker Host logs
       - /:/rootfs:ro
       - /sys:/sys:ro
       - /proc:/proc:ro
