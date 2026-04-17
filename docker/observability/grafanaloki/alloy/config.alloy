@@ -34,7 +34,7 @@ loki.source.syslog "opnsense_syslog" {
     address  = "0.0.0.0:5140"
     protocol = "udp"
   }
-  
+
   // Forward the raw syslog data to our processing stage below
   forward_to = [loki.process.opnsense_labels.receiver]
 }
@@ -51,9 +51,84 @@ loki.process "opnsense_labels" {
   // Forward the newly labeled logs to the final destination
   forward_to = [loki.write.local_loki.receiver]
 }
+// ==========================================
+// 4. RECEIVERS (Suricata IDS Telemetry)
+// ==========================================
+
+loki.source.syslog "suricata_syslog" {
+  listener {
+    address  = "0.0.0.0:5141"
+    protocol = "udp"
+  }
+  // Suricata sends JSON, not RFC5424, so no syslog_format flag here!
+  forward_to = [loki.process.suricata_parser.receiver]
+}
+
+loki.process "suricata_parser" {
+  
+  // 1. Fix the snippet's broken hostname logic + add your baseline tags
+  stage.static_labels {
+    values = {
+      job      = "suricata_ids",
+      instance = "lenovo-m920q",
+      hostname = "OPNsense", 
+    }
+  }
+
+  // 2. Harvest the JSON extraction logic
+  stage.json {
+    expressions = {
+      srcip          = "src_ip",
+      dstip          = "dest_ip",
+      alert_severity = "alert.severity",
+      alert_category = "alert.category",
+    }
+  }
+
+  // 3. Promote the critical security data to indexable labels
+  stage.labels {
+    values = {
+      severity = "alert_severity",
+      category = "alert_category",
+    }
+  }
 
 // ==========================================
-// 4. BASIC HOST METRICS 
+// GEO-IP ENRICHMENT (Uncomment after DB is downloaded)
+// ==========================================
+// stage.geoip {
+//   source  = "srcip"
+//   db      = "/etc/alloy/GeoLite2-City.mmdb"
+//   db_type = "city"
+// }
+// stage.labels {
+//   values = {
+//     src_city_name          = "geoip_city_name",
+//     src_country_name       = "geoip_country_name",
+//     src_location_latitude  = "geoip_location_latitude",
+//     src_location_longitude = "geoip_location_longitude",
+//   }
+// }
+// stage.geoip {
+//   source  = "dstip"
+//   db      = "/etc/alloy/GeoLite2-City.mmdb"
+//   db_type = "city"
+// }
+// stage.labels {
+//   values = {
+//     dst_city_name          = "geoip_city_name",
+//     dst_country_name       = "geoip_country_name",
+//     dst_location_latitude  = "geoip_location_latitude",
+//     dst_location_longitude = "geoip_location_longitude",
+//   }
+// }
+
+// 4. Ship it to the database
+forward_to = [loki.write.local_loki.receiver]
+}
+
+// ==========================================
+// 5. BASIC HOST METRICS 
 // ==========================================
 
 // By bind mounting /proc and /sys in docker-compose.yml, 
@@ -69,7 +144,7 @@ prometheus.scrape "host_metrics" {
   forward_to = [prometheus.remote_write.local_prometheus.receiver]
 }
 // ==========================================
-// 5. DOCKER METRICS
+// 6. DOCKER METRICS
 // ==========================================
 
 // Discover all running Docker containers
@@ -97,7 +172,7 @@ discovery.relabel "container_names" {
 }
 
 // ==========================================
-// 6. DOCKER LOGS
+// 7. DOCKER LOGS
 // ==========================================
 
 // Scrape the logs, using the newly relabeled targets
