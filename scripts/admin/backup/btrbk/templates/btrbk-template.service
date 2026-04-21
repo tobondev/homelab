@@ -1,0 +1,8 @@
+[Unit]
+Description= {{DESCRIPTION}} - Service Unit
+Requires= {{MOUNT_UNIT_NAME}}
+After= {{MOUNT_UNIT_NAME}}
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/btrbk -c {{CONFIG_FILE}} {{FLAGS}} {{COMMAND}}

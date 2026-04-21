@@ -7,7 +7,7 @@ This repository documents the architecture, configuration management, and operat
 The documentation here reflects two distinct phases of the project:
 
 - **Phase 1 (pre-March 2026):** Build fast, break things, learn by doing. Documentation was sparse and retroactive. The current-state architecture docs in `docs/architecture/` represent an honest reconstruction of the decisions that survived this phase, with rationale written from the current vantage point rather than backdated.
-- **Phase 2 (March 2026 onward):** Documentation-first. All architectural decisions are captured as ADRs before or during implementation. New projects (Ansible, centralized logging, AD/Azure AD integration) will have full decision records from day one.
+- **Phase 2 (March 2026 onward):** Documentation-first. All architectural decisions are captured as ADRs before or during implementation. New projects (PLGA centralized logging, AD/Azure AD integration) will have full decision records from day one.
 
 This distinction reflects how production infrastructure actually evolves — and being transparent about that is the point.
 
@@ -53,6 +53,7 @@ docs/
 
 ### Containerization & Workloads
 - **Deployment Model:** Modular Docker Compose stacks with BTRFS bind mounts for stateful services, enabling atomic backup and restore of service state alongside container configuration.
+- **Ansible:** Configuration management and automated provisioning across bare-metal and VM infrastructure.
 - **Secrets Management:** Local Vaultwarden instance as the authoritative secrets store; `.env` isolation enforced at the compose level.
 - **Observability:** LGAP stack (Loki, Grafana, Alloy, Prometheus) for centralized telemetry, log aggregation, and alerting across services and infrastructure.
 - **Testing Pipeline:** QEMU/KVM with Open vSwitch for virtual-to-physical staging, enabling hardware-in-the-loop validation before production deployment.
@@ -67,7 +68,6 @@ docs/
 
 The following are in active planning or early implementation. ADRs will be published as decisions are finalized.
 
-- **Ansible:** Configuration management and automated provisioning across bare-metal and VM infrastructure.
 - **Active Directory / Azure AD:** Mixed-OS domain integration (Linux + Windows), including RHEL enrollment and Entra ID hybrid scenarios.
 - **Suricata IDS:** IDS system runnig on OPNsense hardware, which provides a first layer of detection and response for robust network security
 - **Wazuh XDR:** Running on virtualized softare, and integrating with OPNsense's wazuh agent to provide network-wide protection,

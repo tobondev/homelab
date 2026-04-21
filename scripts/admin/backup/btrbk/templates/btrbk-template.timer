@@ -1,0 +1,9 @@
+[Unit]
+Description={{DESCRIPTION}} - Timer Unit
+
+[Timer]
+OnCalendar={{FREQUENCY}}
+Persistent=true
+
+[Install]
+WantedBy=timers.target
