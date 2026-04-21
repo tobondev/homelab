@@ -10,6 +10,8 @@ creation_rules:
     age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
   - path_regex: \.(yaml|yml)$
     age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  - path_regex: \.service$
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
   - path_regex: \.(log|timing)$
     format: binary
     age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"

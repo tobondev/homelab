@@ -1,0 +1,14 @@
+[Unit]
+Description={{DESCRIPTION}} -- Mount Unit
+# Ensures the mount doesn't happen before the physical device is actually plugged in/available
+BindsTo={{ESCAPED_BY_UUID}}
+After={{ESCAPED_BY_UUID}}
+StopWhenUnneeded=yes
+
+[Mount]
+# Replace with the actual UUID of your physical backup drive
+What={{BY_UUID}}
+Where={{MOUNT_LOCATION}}
+Type=btrfs
+# Specify the subvolume and standard optimized BTRFS mount flags
+Options={{MOUNT_OPTIONS}}
