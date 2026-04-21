@@ -1,8 +1,12 @@
 # Homelab Engineering & Operations
 
 ## Overview
+This repository documents the architecture, operations, and security engineering decisions behind a production-grade homelab I design, operate, and maintain independently. It reflects the kind of work I do: structured change management, documented incident response, automated disaster recovery, and deliberate security architecture across a segmented multi-VLAN environment.
 
-This repository documents the architecture, configuration management, and operational decisions for my primary homelab environment. The lab runs production-grade tooling on deliberately volatile infrastructure — a design choice, not an accident. Standardizing on Arch Linux as the bare-metal host OS introduced enough system entropy to force real disaster recovery discipline and a deep understanding of the full stack, from pre-boot encryption to Layer 3 segmentation to container orchestration.
+Everything here is real infrastructure. The ADRs were written before or during implementation. The incident reports reflect actual failures and recoveries. The operations logs include timing data from actual deployments.
+If you're evaluating my technical background: start with docs/incidents/for incident response, docs/adrs/ for architectural decision-making, and docs/operations/ for deployment and change management discipline.
+
+
 
 The documentation here reflects two distinct phases of the project:
 
