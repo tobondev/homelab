@@ -79,6 +79,17 @@ Top risks:
 
 ## 10. Post-implementation Review
 
-*To be completed after the first successful alerting event, requiring manual intervention.*
+**Date implemented:** 2026-04-03
+**Date reviewed:** 2026-04-22
+**Status:** Verified & Closed
 
-Status: Pending trigger
+**Acceptance Criteria Verification:**
+
+- **AC-1:** Satisfied — Out-of-band compiled `curl` packages passed local security audits (`pkg audit -F`) with zero known vulnerabilities at the time of deployment. *(Verified 2026-04-03)*
+- **AC-2:** Satisfied — No unauthorized base dependencies (e.g., `libssh2`) were introduced into the local package database during the source compilation. *(Verified 2026-04-03)*
+- **AC-3:** Satisfied — The automated monitoring script (`opnsense-check_package_upstream_version.sh`) successfully triggered a CRITICAL alert in the WebUI log on 2026-04-22 when the OPNsense repository updated `curl` to version 8.19.0_2, achieving upstream parity. *(Verified 2026-04-22)*
+- **AC-4:** Satisfied — Post-compilation and during the eventual rollback to the official repository, system services restarted cleanly. The Web GUI was restarted using `/usr/local/etc/rc.restart_webgui` with no PHP or dynamic linker errors. *(Verified 2026-04-22)*
+
+**Resolution Log:**
+- **2026-04-22:** Upstream parity achieved. Following the automated alert, a system snapshot was created. The package was unlocked (`pkg unlock -y curl`), updated, and upgraded to `8.19.0_2`. Because no uninstallation was required prior to the upgrade, the process was seamless. The firewall package base is now fully re-aligned with the OPNsense official upstream source. The hybrid patching procedure outlined in this ADR is considered fully verified.
+
