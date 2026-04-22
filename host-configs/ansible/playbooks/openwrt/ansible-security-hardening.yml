@@ -121,6 +121,7 @@
           delegate_to: localhost
           become: false
           tags: [always]
+          when: "'norender' not in ansible_run_tags"
 
         # ── REMOTE EXECUTION ──────────────────────────────────────────────
         - name: Deployment | SSH - authorized_keys

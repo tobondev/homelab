@@ -37,6 +37,7 @@
         dest: "{{ artifacts_dir }}/{{ inventory_hostname }}-{{ ansible_date_time.date }}-{{ ansible_date_time.time }}-luci-lockdown-report.md"
       delegate_to: localhost
       become: false
-      tags: [render]
-      when: luci_interface.changed
-
+      tags: [always]
+      when:
+        - luci_interface.changed
+        - "'norender' not in ansible_run_tags"

@@ -75,7 +75,9 @@
         dest: "{{ artifacts_dir }}/{{ inventory_hostname }}-{{ ansible_date_time.date }}-{{ ansible_date_time.time }}-ssh-rotation.md"
       delegate_to: localhost
       become: false
-      when: sshd_config.changed
+      when:
+        - sshd_config.changed
+        - "'norender' not in ansible_run_tags"
 
     - name: Commit (Rotation) | Update SOPS file in-place
       shell: |

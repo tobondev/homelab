@@ -1,8 +1,9 @@
-- name: Change LED color for Routers - Ansible Manageability Check 
-  hosts: routers, fallback
-  gather_facts: yes
+---
+ - name: Change LED color for Routers - Ansible Manageability Check 
+   hosts: routers, fallback
+   gather_facts: yes
   ## All vars are temporary, they will be set per-host.
-  vars:
+   vars:
     secrets_file: "./openwrt-secrets.yml"
     blink_name: "Bat0_Success"
     color: "LED0_Red"
@@ -20,21 +21,33 @@
       - { setting: "led.sysfs", value: "{{ color }}" }
       - { setting: "led.dev", value: "{{ interface }}" }
       - { setting: "led.trigger", value: "{{ trigger }}" }
-  tasks:
+    led_forceoff_definitions:
+      - { setting: "led", value: "led" }
+      - { setting: "led.name", value: "LED_OFF" }
+      - { setting: "led.sysfs", value: "LED0_Blue" }
+      - { setting: "led.trigger", value: "none" }
+      - { setting: "led.default", value: "0" }
+   tasks:
     - name: Load Encrypted SOPS Variables
       community.sops.load_vars:
-        file: "{{ secrets_file }"
+        file: "{{ secrets_file }}"
       tags: [always]
-    - name: Reset LED settings
-      shell: |
-        uci delete system.led
-      ignore_errors: yes
-      tags: [reset, never]
     - name: Register Existing LED settings
       shell: |
         uci show system.led || true
       tags: [always]
       register: previous_led
+    - name: Reset LED settings
+      shell: |
+        uci delete system.led
+      ignore_errors: yes
+      tags: [reset, forceoff, never]
+    - name: Force LED off
+      shell: |
+        {% for item in led_forceoff_definitions %}
+        uci {{ change_uci_state }} system.{{ item.setting }}={{ item.value }}
+        {% endfor %}
+      tags: [forceoff, never]
     - name: Configure LED settings
       shell: |
         {% for item in led_definitions %}
@@ -59,5 +72,7 @@
         dest: "{{ artifacts_dir }}/{{ inventory_hostname }}-{{ ansible_date_time.date }}-{{ ansible_date_time.time }}-led-change-report.md"
       delegate_to: localhost
       become: false
-      when: current_led.changed
       tags: [always]
+      when:
+        - "'norender' not in ansible_run_tags"
+        - current_led.changed
