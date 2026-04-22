@@ -265,6 +265,7 @@
       delegate_to: localhost
       become: false
       tags: [render, always]
+      when: "'norender' not in ansible_run_tags"
 
     # -----------------------------------------------------------------------
     # Disconnection point — fire and forget
