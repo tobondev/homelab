@@ -236,6 +236,29 @@ The root cause of this incident was an inherent supply-chain delay between upstr
 	- Ran security audit using pkg audit -F to confirm vulnerability warnings were gone. Security audit confirmed patch success.
 	- The runbook was proven to be a highly functional, clear and detailed guide that enabled quick patching with no issues.
 
+## 5.1 Addendum: Triage and Deferral of Python Vulnerabilities
+
+**Appended 2026-04-22**
+
+During the initial `pkg audit -F` scan, four vulnerabilities were identified in the `python313-3.13.12_3` package alongside the `curl` CVEs:
+* **CVE-2025-15366:** Command injection via newlines in the `imaplib` module.
+* **CVE-2025-15367:** Command injection via newlines in the `poplib` module.
+* **CVE-2026-1502:** CR/LF sanitization failure in HTTP proxy CONNECT tunnels.
+* **(Unassigned / VuXML 5ec4dcf6):** `configparser` excessive CPU use.
+
+Routine, manual follow-up audits conducted while triage and documentation were ongoing flagged two additional vulnerabilities:
+
+* **CVE-2026-6100:** Use-after-free in decompressors under memory pressure.
+* **CVE-2026-4786:** Command injection via `webbrowser.open()`.
+
+**Exposure Analysis:** Despite the escalating severity of the incoming CVEs, a contextual threat model revealed zero viable attack vectors. OPNsense does not run IMAP/POP clients, utilize the `webbrowser` module, or process user-controlled compressed archives under memory pressure. 
+
+**Risk of Remediation:** Python serves as the critical middleware for OPNsense's core functionality, including the `configd` daemon and the web GUI. Unlike the `curl` binary, which could be cleanly replaced, a botched source compilation of Python from the FreeBSD ports tree carried an unacceptable "blast radius" with a high probability of breaking the firewall's control plane and no clear rollback path.
+
+**Decision:** Given the unacceptable "blast radius" of breaking the firewall's `configd` middleware via a botched source compilation, the decision was made to accept the risk and defer patching until an official binary is released. No package lock was required, as the system will seamlessly inherit the patched Python version once the official OPNsense repository catches up. Ongoing monitoring will be conducted manually at regular intervals, pending the deployment of LGAP stack, which will provide monitoring and alerting going forward.
+
+*(See ADR-006 for the formalized decision framework regarding intentional vulnerability deferral).*
+
 ## 6. Lessons Learned & Action Items
 
 - A simple script that keeps track of manually updated and version locked packages, and regularly checks them against the OPNsense repository.
