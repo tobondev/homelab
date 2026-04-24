@@ -51,6 +51,7 @@ Conversely, the operational risk of patching is severe. Python is a core depende
 | Artifact | Path/Link | Short description |
 |---------|------|---------|
 | pkg audit -F output | `docs/artifacts/opnsense/2026-04-22-python-cve-audit.md` | Terminal output verifying the presence of CVE's in Python package |
+| Follow-up pkg audit -F output | `docs/artifacts/opnsense/2026-04-24-python-cve-audit.md` | Terminal output verifying the presence of CVE's in Python package post OPNsense Core update |
 
 ## 6. Rollback Plan
 
@@ -90,6 +91,39 @@ In both cases, this ADR should be updated to reflect the resolution.
 - **Confidentiality:** Unaffected. Attack vectors are mitigated by the appliance's architectural role.
 - **Integrity:** Unaffected.
 - **Availability:** Protected. By choosing not to manually compile a core OS dependency, we guarantee the continued availability of the OPNsense control plane.
+
+## 9. Implementation Notes (sanitized)
+
+- Perform periodical security audits, and compare with accepted vulnerability list.
+- Any OPNsense Core update must be evaluated for Python updates.
+- Any Python updates must be documented and artifacts must be updated to reflect it.
+- A security audit must be performed after any update regardless of Python Updates.
+
+## 10. Post-implementation Review
+**Date implemented:** 2026-04-22 | Updated 2026-04-24
+**Outcome:** Pass
+	- **AC-1:** Python not patched (2026-04-22)
+	- **AC-2:** Package audit output logged and recorded in`docs/artifacts/opnsense/2026-04-22-python-cve-audit.md` (2026-04-22)
+	- **AC-3:** Modules are not present, confirmed by pkg query (2026-04-22)
+**Follow-ups:**
+
+- OPNsense Core Update:
+	- Owner: Marcos Tobon
+	- Date occurred: 2026-04-24
+
+OPNsense Core Hotfix was released on 2026-04-24 as 26.1.6_2. This included an updated Python version 3.13.13. A System Snapshot was performed prior to upgrade. Post-upgrade, a security audit confirms that OPNsense's version `3.13.13` release does not yet patch the identified CVEs. Despite the persistent vulnerabilities, the environmental risk remains unchanged. This continues to be an acceptable outcome. Artifact can be found in `docs/artifacts/opnsense/2026-04-24-python-cve-audit.md`.
+
+- Final review date:
+	- Scheduled for 2026-05-27
+---
+
+## Minimal ADR checklist
+- [x] One-line decision statement present.
+- [x] Acceptance criteria defined and measurable.
+- [x] Test artifacts linked and reproducible.
+- [x] Rollback plan documented and timed.
+- [x] Confidence and review date set.
+- [x] Rolled out and tested recovery plan (N/A).
 
 ---
 ## Index Registration
