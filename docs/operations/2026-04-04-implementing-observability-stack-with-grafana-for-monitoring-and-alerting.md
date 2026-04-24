@@ -9,30 +9,38 @@
 
 ## 1. Context & Problem Statement
 
-The homelab is currently undergoing a strategic shift to build out a comprehensive observability and security monitoring posture, incorporating centralized log ingestion, IDS/IPS telemetry (Suricata) and host-based intrusion detection (Wazuh). The recently deployed OPNsense appliance  (see: `docs/adrs/adr-2026-03-24-001-centralize-l3-opnsense.md`) provides the network foundation for this capability
+The homelab is currently undergoing a strategic shift to build out a comprehensive observability and security monitoring posture, incorporating centralized log ingestion, IDS/IPS telemetry (Suricata) and host-based intrusion detection (Wazuh). The recently deployed OPNsense appliance (see: `docs/adrs/adr-2026-03-24-001-centralize-l3-opnsense.md`) provides the network foundation for this capability.
 
 
-Before configuring data sources, the goal of this session was to validate that the core observability stack, consisting of Grafana, Loki, Prometheus and Alloy, could be deployed in a clean, maintanable and secret-safe configuration, while maintaining portfolio visibility. A previous incomplete attempt at this stack existed and was used as a baseline.
+Before configuring data sources, the goal of this session was to validate that the core observability stack, consisting of Grafana, Loki, Prometheus and Alloy, could be deployed in a clean, maintainable and secret-safe configuration, while maintaining portfolio visibility. A previous incomplete attempt at this stack existed and was used as a baseline.
 
-Planned data sources (pending future sessions):
-- OPNsense syslog -> Alloy syslog receiver
-- Suricata EVE JSON -> Alloy file-based ingestion
-- Wazuh manager alerts -> Loki pipeline
-- Host metrics -> Prometheus / Alloy
-- Workstation metris -> Prometheus / Alloy
-- OpenWRT mesh metrics -> Prometheus / Alloy
+Planned data sources:
+- OPNsense syslog -> Alloy syslog receiver. (2026-04-17)
+- Suricata EVE JSON -> Alloy file-based ingestion. (2026-04-23)
+- Wazuh manager alerts -> Loki pipeline [Pending]
+- Host metrics -> Prometheus / Alloy. (2026-04-23)
+- Workstation metrics -> Prometheus / Alloy [Pending]
+- OpenWRT mesh metrics -> Prometheus / Alloy [Pending]
 
 ## 2. Architectural Decisions & Strategy
 
-* **Decision 1: Host bind mounts instead of Docker named volumes**
-    * *Rationale:* Mapping presistent data to local subdirectories (I.E. ./docker/stacks/observability/grafana/data) alongside their respective configuration files provides transparent control over their state, and allows for more flexibility of backups using existing tools such as btrbk or rsync.
+### Decision 1: Host bind-mounts for Docker stack
 
-* **Decision 2:~Extrernalized configuration via `.env` files ~~+`.gitignore`**~~ -- Partially Superseeded per ADR-004.
-    * *Rationale:* Hardcoding ports and paths limits flexibility and increases risk of secrets leakage; by combining this with .gitignore, it provides a secure production baseline. ~~This is an interim solution, as the system transitions towards a dedicated secrets management tool (SOPS or equivalent)~~. SOPS is implemented as of 2026-04-17.
+**Decision:** Use host bind-mounts over docker named volumes for persistent data storage.
 
-* **Decision 3: MVP-first stack spin-up before introducing data sources**
+**Rationale:** Mapping persistent data to local subdirectories (e.g. ./docker/stacks/observability/grafana/data) alongside their respective configuration files provides transparent control over their state, and allows for more flexibility of backups using existing tools such as btrbk or rsync.
 
-- *Rationale:* Verifying the core stack (Grafana UI reachable, Prometheus and Loki connected as data sources, Alloy pipeline healthy) before configuring OPNsense syslog forwarding or Suricata reduces the number of simultaneous failure points during initial deployment.
+### Decision 2: Separate Secrets from compose architecture
+
+**Decision:**  Externalized configuration via `.env` files and `SOPS` -- Updated to follow ADR-004. (2026-04-17)
+
+**Rationale:** Hardcoding ports and paths limits flexibility and increases risk of secrets leakage; using SOPS provides a way to encrypt sensitive configuration details while still displaying the logic behind the design for portfolio visibility.
+
+### Decision 3: Prioritize MVP stack spin-up
+
+**Decision:** Develop and spin-up LGAP stack before introducing Suricata and OPNsense as data sources
+
+**Rationale:** Verifying the core stack (Grafana UI reachable, Prometheus and Loki connected as data sources, Alloy pipeline healthy) before configuring OPNsense syslog forwarding or Suricata reduces the number of simultaneous failure points during initial deployment.
 
 ## 3. Implementation & Execution
 
@@ -47,12 +55,12 @@ Synced the previous incomplete PLG stack progress into the repository structure,
 ```
 Immediately following the synchronization, the `.gitignore` file was updated to include the `.env` files in the docker-compose stack and `git status` was run to verify that the `.env` file wasn't being tracked for changes. Updated `docker-compose.yml` to ensure all sensitive values were mapped to variables in the `.env` instead of being hardcoded.
 
-Transferred the full stack directory to server. Sudo was missed from the rsync command, resulting in ownership being dropped.
+Transferred the full stack directory to server. However, `sudo` was missed from this rsync command, resulting in ownership being dropped.
 
 ```
-❯ rsync -aP -e "ssh -p 54792" ./docker/observability/grafanaloki {USER}@{SERVERIP}:/{DOCKER}/{STORAGE/{LOCATION}/
+❯ rsync -aP -e "ssh -p 54792" ./docker/observability/grafanaloki {USER}@{SERVERIP}:/{DOCKER}/{STORAGE}/{LOCATION}/
 ```
-SSH was used to remotely access the server, where `ls -Rl` confirmed permissions had not been preserved. Corrected using `chown -R {USER}:{GROUP}`  on all {SERVICE}/data folders. 
+SSH was used to remotely access the server, where `ls -Rl` confirmed permissions had not been preserved. Corrected using `chown -R {USER}:{GROUP}` on all {SERVICE}/data folders. 
 
 Once this was resolved, `docker compose up -d` was used to attempt to spin up the stack. 
 
@@ -67,6 +75,8 @@ Stack spun up cleanly on the subsequent attempt. Confirmed via:
 ```bash
 docker compose logs -f
 ```
+* **Phase 2 (Configuration):**
+
 Accessed Grafana Web UI, changed administrator password (stored in encrypted vault). Connected Prometheus and Loki as data sources using internal Docker network addressing (`http://{service_name}:{internal_port}`) rather than host-mapped ports, enabled by all services sharing the same compose network.
 
 Populated `config.alloy` with pipeline configuration covering:
@@ -94,14 +104,14 @@ Transferred updated `docker-compose.yml`, `.env`, and `config.alloy` back to the
 Resumed stack configuration to address failing telemetry ingestion. Identified and resolved several core pipeline bottlenecks:
 
 **Incident 3 — Alloy Least-Privilege Execution:**
-Alloy failed to read `/var/run/docker.sock` for container discovery. Resolving this error by running the container with root privilages was deemed unnacceptable as a solution.
+Alloy failed to read `/var/run/docker.sock` for container discovery. Resolving this error by running the container with root privileges was deemed unacceptable as a solution.
 *Resolution:* The `alloy` user was added to the docker group and `/var/run/docker.sock` was mounted as read-only; this required using the host PID to allow access to host-processes.
 This is a temporary solution, since it bypasses process isolation; see below.
 
 **Incident 4 — Security Risks of Bypassing Process Isolation:**
-Alloy handles too many tasks and sensitive information, including logs for OPNsense and other applications; it also exposes it to a wider attack surface, since every log source is a potential attack vector. 
+Alloy handles too many tasks and sensitive information, including logs for OPNsense and other applications; this exposes the system to a wider attack surface, since every log source is a potential attack vector. 
 *Resolution:* Potential solutions include Direct Log File Scraping, a Docker Socket Proxy, or forgoing docker log collection.
-Allowing it to run without process-isolation in production is unacceptable, a permanent solution is required.
+Allowing Alloy to run without process-isolation in production is unacceptable; a permanent solution is required.
 
 
 **Incident 5 — Loki Ingestion Rate Limits & Backpressure:**
@@ -114,7 +124,7 @@ Prometheus actively refused metrics pushed from Alloy, returning HTTP 404 errors
 
 
 **Incident 7 — Alloy Configuration Validation Error:**
-Alloy was showing warnings with incorrect syslog formatting coming from the opnsense_telemetry job;
+Alloy was showing warnings with incorrect syslog formatting coming from the opnsense_telemetry job.
 *Resolution:* Identified Alloy's preference for RFC5424 syslog formatting. Enabled RFC5424 in the OPNsense Web-UI. Confirmed Alloy natively auto-detects RFC5424 formatting without explicit declaration and validated ingestion.
 
 * **Phase 5 (OPNsense Telemetry Verification):**
@@ -123,154 +133,70 @@ Configured OPNsense to forward syslog data. Restructured the Alloy pipeline usin
 
 Successfully verified active data streams in Grafana Explore for both Loki (Docker logs + OPNsense Syslog) and Prometheus (Host metrics + Docker cAdvisor metrics).
 
+### Session 3 -- 2026-04-23
+
+* **Phase 6 (Loki Data Persistence):**
+
+**Incident 8 — Loki misconfiguration preventing data permanence**
+Exploring the Loki data folder revealed it to be empty despite previously verified data ingestion. The cause was identified as `loki-config.yml` setting `path_prefix: /etc/loki`, causing the container to write chunks and index data inside its configuration directory, instead of the `/loki` bind mount defined in `docker-compose.yml`. 
+*Resolution:* Modified `loki-config.yml` file to point to `/loki`, aligning it with compose expectations. Data directory now populated as expected. AC-4 re-confirmed.
+
+* **Phase 7 (Enforce Docker Socket Isolation):**
+
+In order to allow observability for Docker, without granting  Alloy root privileges or direct socket access, `dockerproxy` was added to the stack. This container holds the direct socket mount and exposes a constrained read-only TCP API. This reduces the blast radius of an attack by separating duties. The additional resource consumption of a fifth container in the stack was deemed an acceptable trade-off. `config.alloy` was modified to point to the TCP address of Docker Proxy instead of the Unix socket directly.
+
+* **Phase 8 (Enforce minimal privileges for host metric ingestion):**
+
+Research into Systemd's default security model revealed that the `adm` group is given access to `/var/log`, including the systemd journal. Since Alloy no longer requires root access to read Docker logs, the next step was minimizing privileges required for host metrics collection. The compose file was modified to add Alloy to the `adm` group. This, combined with a read-only mount, is accepted as the minimum permission required. No root access is granted.
+
+* **Phase 9 (Enabling Suricata as MVP for Log Ingestion):**
+
+Configuration for Alloy ingestion of OPNsense syslog and Suricata EVE JSON was found thanks to [TurboKre's Blog](https://blog.kre3.net/en/article/opnsense-firewall-observation-with-grafana/).
+This configuration was studied and modified to generate an implementation for our use-case.
+
+**Incident 9 — Suricata alerts not triggering**
+To create an initial framework for IDS/IPS monitoring and alerting, Suricata was enabled in OPNsense, using the Emerging Threats Open Ruleset. These were confirmed enabled and alerting. The pipeline was already built in Alloy, so a test was performed using `curl http://testmyids.org/uid/index.html`. No alerting. Configuration was re-checked, rules were found to have failed downloading. Rules were downloaded again and test was re-performed. No alerting. IDS was restarted. Test re-performed. No alerting.
+*Resolution:* Set VLAN interfaces to promiscuous mode, which allowed the IDS to analyze traffic.
+
+After Suricata Log generation was confirmed in OPNsense, Alloy was restarted and the logs started flowing into the previously configured Suricata Ingestion Port. Detections included DNS over HTTPS and P2P protocols; these are expected functions of the setup and need to be tuned out, but they serve to prove the system is analyzing traffic and logging alerts. AC-1 is satisfied 2026-04-23.
+
+* **Phase 10 (GeoIP Enrichment):**
+
+A MaxMind developer account was created and the GeoLite2-City database was obtained. The database file was encrypted with `SOPS` and `gitignored` to prevent unauthorized redistribution. `docker-compose.yml` and `.env` were updated to add a read-only bind mount for the database file at `/etc/alloy/GeoLite2-City.mmdb`. The GeoIP enrichment stages in `config.alloy` were uncommented; the Alloy container was restarted. After a short warm-up period, `src_city_name`, `src_country_name`, `src_location_latitude`, and `src_location_longitude` labels began populating on Suricata events in Grafana Explore, confirming the integration.
+
+* **Phase 11 (Alerting MVP):**
+
+A test of Grafana alerting capabilities was designed by using the absence of OPNsense telemetry as an alert trigger. This was chosen due to the simplicity of implementation and absence of noise. A Grafana alert rule was created to monitor for OPNsense logs every minute, with a 5-minute wait before firing. Remote logging was disabled in OPNsense at 13:25. At 13:30 the alert status changed to Pending. At 13:31 the status switched to Firing. Logging was re-enabled in OPNsense at 13:32. Within 2 minutes, the status was back to normal. This verifies the MVP for the Alerting Pipeline.
+
+**Note:** A notification contact point (webhook or email) has not yet been configured. The alert fires and resolves correctly within the Grafana UI; external alert delivery remains pending.
+
 ---
 
-## 4. Outcome & Future Considerations (Updated 2026-04-17)
+## 4. Outcome & Future Considerations (Updated 2026-04-23)
 
 **Session 1 result:** Core observability stack deployed and running on the server. Grafana, Loki, and Prometheus are operational and interconnected. Alloy is configured and healthy. No data is yet flowing — ingestion configuration is pending.
 
 **Session 2 result:** Telemetry pipelines are actively flowing. OPNsense base syslog, Docker container metrics, and host metrics are successfully ingesting. Stack hardening and permission boundaries have been enforced.
 
+**Session 3 result:** Full security observability pipeline is operational. OPNsense base syslog, Docker container metrics and host metrics are ingesting successfully. Alloy permissions sprawl has been resolved by using `docker-socket-proxy` and host permissions have been removed. Suricata IDS events are enriched with GeoIP thanks to MaxMind database integration. Grafana alerting MVP tested and verified. Stack framework is deemed production stable at its current scope. Future work will focus on data visualization, parsing, dashboards and alerting.
+
 **Technical debt:**
-~~- OPNsense syslog forwarding not yet configured~~ Resolved 2026-04-17
-- Suricata EVE JSON ingestion not yet configured
-- Wazuh manager not yet deployed (planned: server VM)
-- Alerting rules and notification channels not yet defined
-~~- Secrets management transition (SOPS) pending~~ Resolved 2026-04-14
-
-Configuration for Alloy ingestion of OPNsense syslog and Suricata EVE JSON was found thanks to `TurboKre's Blog`.
-
-```
-loki.write "local_loki" {
-  endpoint {
-    url = "http://loki:3100/loki/api/v1/push"
-  }
-}
-
-loki.source.syslog "syslog_firewall" {
-  listener {
-    address = "0.0.0.0:8091"
-    idle_timeout = "60s"
-    label_structured_data = true
-    labels = {
-      job = "syslog",
-      app = "filterlog",
-    }
-  }
-  forward_to = [loki.process.firewall_ips.receiver]
-}
-
-loki.source.syslog "syslog_ids" {
-  listener {
-    address = "0.0.0.0:8092"
-    idle_timeout = "60s"
-    label_structured_data = true
-    labels = {
-      job = "syslog",
-      app = "suricata",
-    }
-  }
-  forward_to = [loki.process.ids_ips.receiver]
-}
-
-loki.process "firewall_ips" {
-  forward_to = [loki.relabel.hostname_labels.receiver]
-
-  stage.regex {
-    expression = ",(?P<srcip>([0-9]+\\.[0-9\\.]+)|([0-9a-fA-F]*:[0-9a-fA-F:]+)),(?P<dstip>([0-9]+\\.[0-9\\.]+)|([0-9a-fA-F]*:[0-9a-fA-F:]+)),"
-  }
-
-  stage.geoip {
-    source = "srcip"
-    db = "/etc/alloy/GeoLite2-City.mmdb"
-    db_type = "city"
-  }
-
-  stage.labels {
-    values = {
-      src_city_name = "geoip_city_name",
-      src_country_name = "geoip_country_name",
-      src_location_latitude = "geoip_location_latitude",
-      src_location_longitude = "geoip_location_longitude",
-    }
-  }
-
-  stage.geoip {
-    source = "dstip"
-    db = "/etc/alloy/GeoLite2-City.mmdb"
-    db_type = "city"
-  }
-
-  stage.labels {
-    values = {
-      dst_city_name = "geoip_city_name",
-      dst_country_name = "geoip_country_name",
-      dst_location_latitude = "geoip_location_latitude",
-      dst_location_longitude = "geoip_location_longitude",
-    }
-  }
-}
-
-loki.process "ids_ips" {
-  forward_to = [loki.relabel.hostname_labels.receiver]
-
-  stage.json {
-    expressions = {
-      srcip = "src_ip",
-      dstip = "dest_ip",
-    }
-  }
-  
-  stage.geoip {
-    source = "srcip"
-    db = "/etc/alloy/GeoLite2-City.mmdb"
-    db_type = "city"
-  }
-
-  stage.labels {
-    values = {
-      src_city_name = "geoip_city_name",
-      src_country_name = "geoip_country_name",
-      src_location_latitude = "geoip_location_latitude",
-      src_location_longitude = "geoip_location_longitude",
-    }
-  }
-
-  stage.geoip {
-    source = "dstip"
-    db = "/etc/alloy/GeoLite2-City.mmdb"
-    db_type = "city"
-  }
-
-  stage.labels {
-    values = {
-      dst_city_name = "geoip_city_name",
-      dst_country_name = "geoip_country_name",
-      dst_location_latitude = "geoip_location_latitude",
-      dst_location_longitude = "geoip_location_longitude",
-    }
-  }
-}
-
-loki.relabel "hostname_labels" {
-  forward_to = [loki.write.local_loki.receiver]
-
-  rule {
-    action        = "replace"
-    target_label  = "hostname"
-    replacement   = "OPNSense.example.com"  # don't work, need investigation
-  }
-}
-
-```
-
-This configuration is being studied and modified to add to the local implementation.
+- Wazuh manager not yet deployed. [Planned: server VM]
+- Alerting rules and notification channels not yet defined. [In Progress]
+- Visualization Dashboard needs design and implementation. [In Progress]
+- Log normalization needs to isolate baseline noise. [Data collection In Progress]
 
 
 ### Next Steps
-- [ ] **Pending:** Resolve container isolation issues with Alloy Docker log ingestion OR disable Docker integration.
-- [x] **Completed:** Configure OPNsense syslog forwarding to Alloy receiver; verify log ingestion in Loki and Grafana. (2026-04-17)
-- [ ] **Pending:** Configure Suricata on OPNsense and add EVE JSON ingestion pipeline in Alloy.
-- [ ] **Pending:** Deploy Wazuh manager in server VM; connect existing Wazuh agent on OPNsense.
-- [ ] **Pending:** Define Grafana alerting rules for high-priority Suricata signatures and failed auth events; configure webhook notification channel.
-- [x] **Completed:** Transition `.env` secrets to SOPS-managed encrypted files. (2026-04-14)
+
+- [x] **Completed:** Fix Loki data persistence (`path_prefix` misconfiguration).  _(AC-4, 2026-04-23)_
+- [x] **Completed:** Resolve container isolation issues with Alloy Docker log ingestion via `docker-socket-proxy`. _(AC-5, 2026-04-23)_
+- [x] **Completed:** Configure OPNsense syslog forwarding to Alloy receiver; verify log ingestion in Loki and Grafana. _(AC-1, 2026-04-23)_
+- [x] **Completed:** Configure Suricata on OPNsense, add EVE JSON ingestion pipeline in Alloy. _(AC-1, 2026-04-23)_
+- [x] **Completed:** Download and mount GeoLite2-City database, verify MaxMind GeoIP enrichment and implement. _(2026-04-23)_
+- [x] **Completed:** Define MVP Grafana alerting rules (Dead-Man's Switch for OPNsense telemetry loss). _(2026-04-23)_
+- [ ] **Pending:** Tune Suricata ruleset to baseline network traffic and reduce false-positive noise. _(AC-6, pending)_
+- [ ] **Pending:** Define notification channels (Webhook/Discord) for Grafana alerts. _(AC-7, pending)_
+- [ ] **Pending:** Define Grafana alerting rules for high-priority Suricata signatures and failed auth events. _(AC-8, pending)_
+- [ ] **Pending:** Deploy Wazuh manager in server VM; connect existing Wazuh agent on OPNsense. _(AC-2, pending)_
+- [x] **Completed:** Transition `.env` secrets to SOPS-managed encrypted files. _(AC-3, 2026-04-14 -- ADR-004, 2026-04-23)_

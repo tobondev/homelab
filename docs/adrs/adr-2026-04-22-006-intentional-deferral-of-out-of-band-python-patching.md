@@ -71,7 +71,6 @@ In both cases, this ADR should be updated to reflect the resolution.
 ### Risk Assessment Analysis
 
 | CVE | Severity | CVSS | EPSS | OPNsense Exposure | Risk | Fixed In |
-|:---:|:---:|---|---|:---:|:---:|:---:|---|
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **CVE-2026-6100** | **Critical** | 9.1 | 0.15% | None  — Vulnerability only present if program re-uses decompressor instances across multiple decompression and ignores `MemoryError`s. | Low | 3.14.4_1 |
 | **CVE-2025-15366** | Medium | 5.9 | 0.08% | None  — libimap used. No impap client present. | None | 3.14 |

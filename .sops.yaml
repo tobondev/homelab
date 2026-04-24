@@ -1,7 +1,11 @@
 creation_rules:
   - path_regex: \.env$
     age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  - path_regex: \sops.env$
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
   - path_regex: \.conf$
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  - path_regex: \.mmdb$
     age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
   - path_regex: \.cfg$
     age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
