@@ -1,23 +1,28 @@
 [
   {
-    "title": "Manual Deployment of Upstream BSD patches for curl CVEs",
-    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/incidents/2026-04-02-manual-deployment-of-upstream-bsd-patches-for-curl-cves.md",
-    "priority": 70
-  },
-  {
     "title": "Homelab Architecture Overview",
     "url": "https://raw.githubusercontent.com/tobondev/homelab/main/README.md",
     "priority": 100
   },
   {
-    "title": "Decoupling L2 mesh and L3 routing for Homelab Network",
-    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-03-24-decoupling-l2-mesh-and-l3-routing-for-homelab-network.md",
+    "title": "Documented Exception to Hybrid Patching Posture (ADR-006)",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/adrs/adr-2026-04-22-006-intentional-deferral-of-out-of-band-python-patching.md",
     "priority": 95
   },
-{
+  {
+    "title": "Incident Report: Manual deployment of upstream BSD patches for CURL CVEs",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/incidents/2026-04-02-manual-deployment-of-upstream-bsd-patches-for-curl-cves.md",
+    "priority": 90
+  },
+  {
     "title": "OPNsense Deployment",
     "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-03-31-opnsense-deployment.md",
     "priority": 90
+  },
+  {
+    "title": "Decoupling L2 mesh and L3 routing for Homelab Network",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-03-24-decoupling-l2-mesh-and-l3-routing-for-homelab-network.md",
+    "priority": 85
   },
   {
     "title": "Architecture Decision Records: OPNsense and Smart Core - Small Edge Architecture",
@@ -29,5 +34,4 @@
     "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/adrs/adr-2026-04-03-002-hybrid-patching-posture.md",
     "priority": 70
   }
-
 ]
