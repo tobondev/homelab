@@ -61,13 +61,30 @@ services:
       - "${ALLOY_SURICATA_PORT:-5141}:5141/udp"
     networks:
       - observability
-    pid: host # Required for Alloy to collect accurate host-level metrics
+    group_add:
+      - "${ADM_GRP}"
     volumes:
       - "${ALLOY_CONFIG_FILE}:/etc/alloy/config.alloy:ro"
+      - "${ALLOY_GEOIP_DB}:/etc/alloy/GeoLite2-City.mmdb:ro"
       - "${ALLOY_DATA}:/var/lib/alloy/data"
-      - /var/run/docker.sock:/var/run/docker.sock:ro # Give Alloy access to Docker Host logs
       - /:/rootfs:ro
       - /sys:/sys:ro
       - /proc:/proc:ro
       - /var/log:/var/log:ro
+    restart: always
+  dockerproxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: dockerproxy
+    environment:
+      # Whitelist only what Alloy needs
+      - CONTAINERS=1
+      - IMAGES=1
+      - INFO=1
+      - NETWORKS=1
+      # Explicitly deny destructive requests
+      - POST=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - observability
     restart: always

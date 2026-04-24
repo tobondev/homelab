@@ -18,14 +18,13 @@ Background: Short paragraph describing the technical constraint, security requir
 
 *Example: "The current L3 routing on OpenWRT hardware has reached a resource ceiling, preventing IDS/IPS deployment."*
 
-## 2. Considered Options
+## 2. Considered Options (summary table)
  
 ### Provide each option as a row in a compact table and include a short rationale.
 
-| Option ID | Short name | Security | Cost | Complexity | Time to implement |
-|---------|------|---------|----------|------------|--------|
-| A | [e.g., Upgrade OpenWRT] | [e.g., Medium] | [e.g., Low] | [e.g., Medium] | [e.g., 2-4 weeks] |
-| B | [e.g., OPNsense on x86] | [e.g., High] | [e.g., Low] | [e.g., Low] | [e.g., 1-2 weeks] |
+| Option ID | Short name | Description | Security | Cost | Complexity | Time to implement |
+|---------|------|---------|----------|------------|--------|------------|
+| A | [e.g., Upgrade OpenWRT] | [e.g., Replace main node with higher-spec hardware] | [e.g., Medium] | [e.g., Low] | [e.g., Medium] | [e.g., 2-4 weeks] |
 
 ## 3. Decision Outcome
 
@@ -46,6 +45,13 @@ Rationale (3–5 bullets): Focus on security, performance, and operational cost.
 
 ## 5. Test Plan & Artifacts (links + short summary)
 
+**Test plan (high level):**
+1. [step 1]
+2. [step 2]
+3. [step 3]
+3. [step 4]
+5. [step 5]
+
 | Artifact | Path/Link | Short description |
 |---------|------|---------|
 | [e.g., OPNsense MVP config] | `[path/to/file]` | [e.g., Minimum viable XML configuration] |
@@ -54,15 +60,20 @@ Rationale (3–5 bullets): Focus on security, performance, and operational cost.
 
 ## 6. Rollback Plan
 
-Concise, step-by-step rollback instructions with estimated time-to-restore and required personnel.
+*For Deployments:* Concise, step-by-step rollback instructions with estimated time-to-restore.
+*For Policy/Posture Decisions:* Define the specific Trigger Conditions that would invalidate this decision and force a reversion.
 
 1. [e.g., Reconnect original mesh node to trunk port (no reconfiguration).]
 2. [e.g., Revert DNS/DHCP to previous server via saved config snapshot.]
-3. [e.g., Validate client connectivity and DHCP leases.]
 
 Estimated RTO: [e.g., 15–30 minutes.]
 
 ## 7. Trade-offs, Risks and Mitigations
+
+*(Optional for Security ADRs: Vulnerability Exposure Table)*
+| CVE | Severity | CVSS | OPNsense Exposure | Risk | Remediation / Fixed In |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| [e.g., CVE-202X] | [e.g., High] | [e.g., 7.5] | [e.g., Low - Module Unreachable] | [e.g., Low] | [e.g., v3.14] |
 
 - **Trade-offs:** [e.g., increased power consumption vs. centralized governance]
 - **Risk:** [Description] → **Mitigation:** [Action]
@@ -72,6 +83,34 @@ Estimated RTO: [e.g., 15–30 minutes.]
 - **Confidentiality:** [e.g., Lateral movement prevention via !RFC1918 rules]
 - **Integrity:** [e.g., Audit trail via centralized syslog]
 - **Availability:** [e.g., Warm-fallback RTO < 30m]
+
+## 9. Implementation Notes (sanitized)
+
+
+## 10. Post-implementation Review
+**Date implemented:** [Implementation date - standard yyyy-mm-dd format]
+**Outcome:** [ Pass | Fail | Superseded | Deprecated | Partially Implemented ]
+	- **AC-1:** [ Brief Outcome Descripton] [(yyyy-mm-dd)]
+	- **AC-2:** [ Brief Outcome Descripton] [(yyyy-mm-dd)]
+	- **AC-3:** [ Brief Outcome Descripton] [(yyyy-mm-dd)]
+	- **AC-4:** [ Brief Outcome Descripton] [(yyyy-mm-dd)]
+**Follow-ups:**
+
+- Roll out recovery plan test:
+	- Owner: {{OWNER_NAME}}
+	- Date planned: [Recovery Plan Test - standard yyyy-mm-dd format]
+
+- Final review date:
+	- Scheduled for [Final Review Date - standard yyyy-mm-dd format]
+---
+
+## Minimal ADR checklist
+- [ ] One-line decision statement present
+- [ ] Acceptance criteria defined and measurable
+- [ ] Test artifacts linked and reproducible
+- [ ] Rollback plan documented and timed
+- [ ] Confidence and review date set
+- [ ] Rolled out and tested recovery plan
 
 ---
 ## Index Registration

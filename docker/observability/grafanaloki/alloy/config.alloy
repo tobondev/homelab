@@ -94,34 +94,34 @@ loki.process "suricata_parser" {
   }
 
 // ==========================================
-// GEO-IP ENRICHMENT (Uncomment after DB is downloaded)
+// GEO-IP ENRICHMENT 
 // ==========================================
-// stage.geoip {
-//   source  = "srcip"
-//   db      = "/etc/alloy/GeoLite2-City.mmdb"
-//   db_type = "city"
-// }
-// stage.labels {
-//   values = {
-//     src_city_name          = "geoip_city_name",
-//     src_country_name       = "geoip_country_name",
-//     src_location_latitude  = "geoip_location_latitude",
-//     src_location_longitude = "geoip_location_longitude",
-//   }
-// }
-// stage.geoip {
-//   source  = "dstip"
-//   db      = "/etc/alloy/GeoLite2-City.mmdb"
-//   db_type = "city"
-// }
-// stage.labels {
-//   values = {
-//     dst_city_name          = "geoip_city_name",
-//     dst_country_name       = "geoip_country_name",
-//     dst_location_latitude  = "geoip_location_latitude",
-//     dst_location_longitude = "geoip_location_longitude",
-//   }
-// }
+   stage.geoip {
+     source  = "srcip"
+     db      = "/etc/alloy/GeoLite2-City.mmdb"
+     db_type = "city"
+   }
+   stage.labels {
+     values = {
+       src_city_name          = "geoip_city_name",
+       src_country_name       = "geoip_country_name",
+       src_location_latitude  = "geoip_location_latitude",
+       src_location_longitude = "geoip_location_longitude",
+     }
+   }
+   stage.geoip {
+     source  = "dstip"
+     db      = "/etc/alloy/GeoLite2-City.mmdb"
+     db_type = "city"
+   }
+   stage.labels {
+     values = {
+       dst_city_name          = "geoip_city_name",
+       dst_country_name       = "geoip_country_name",
+       dst_location_latitude  = "geoip_location_latitude",
+       dst_location_longitude = "geoip_location_longitude",
+     }
+   }
 
 // 4. Ship it to the database
 forward_to = [loki.write.local_loki.receiver]
@@ -149,7 +149,7 @@ prometheus.scrape "host_metrics" {
 
 // Discover all running Docker containers
 discovery.docker "local_containers" {
-  host = "unix:///var/run/docker.sock" 
+  host = "tcp://dockerproxy:2375" 
   // (Note: use your tcp:// proxy address here if you chose Option 2 earlier)
 }
 
@@ -177,7 +177,7 @@ discovery.relabel "container_names" {
 
 // Scrape the logs, using the newly relabeled targets
 loki.source.docker "docker_logs" {
-  host       = "unix:///var/run/docker.sock"
+  host       = "tcp://dockerproxy:2375"
   
   // Targets now points to the relabeled output\
   targets    = discovery.relabel.container_names.output 

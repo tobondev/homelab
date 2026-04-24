@@ -8,17 +8,33 @@
 ---
 
 ## 1. Context & Problem Statement
+
 > *What is the current state of the system, and why is it insufficient? Describe the technical debt, security risk, or performance bottleneck you are trying to solve.*
 
-[Insert Context Here]
+**One-line summary:** [Brief, clear, ADR summary]
+
+**Background:** [Condensed ADR problem + proposed solution]
+
 
 ## 2. Architectural Decisions & Strategy
 > *What are the proposed solutions? Document the trade-offs you considered and justify why you chose the final path. This proves you think like an engineer, not just a technician.*
 
-* **Decision 1:** [e.g., Implementing a two-repository split for IaC and secrets.]
-    * *Rationale:* [Why is this better than the alternative?]
-* **Decision 2:** [e.g., Utilizing BTRFS stack-level subvolumes instead of named volumes.]
-    * *Rationale:* [Why is this better than the alternative?]
+[Copy over from ADR]
+
+### Decision 1: [Brief title]
+
+**Decision:** [e.g., Implementing a two-repository split for IaC and secrets.]
+**Rationale:**
+
+### Decision 2: [Brief title]
+
+**Decision:** [e.g., Implementing a two-repository split for IaC and secrets.]
+**Rationale:**
+
+### Decision 3: [Brief title]
+
+**Decision:** [e.g., Implementing a two-repository split for IaC and secrets.]
+**Rationale:**
 
 ## 3. Implementation & Execution
 > *Detail the specific steps, scripts, and commands used to execute the change. Include sanitized code snippets or configuration blocks where relevant.*

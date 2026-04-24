@@ -10,8 +10,9 @@
 
 ## 1. Executive Summary
 > *Provide a 2-3 sentence executive summary. What happened, what was the impact, and how was it ultimately resolved?*
-####  Technical Context & Discovery
-* **Discovery Method:** [e.g., Pkg audit, Nmap]
+
+#### Technical Context & Discovery (Optional but recommended)
+* **Discovery Method:** [e.g., Pkg audit, Nmap, User Report]
 * **The Weakness:** *Specific details (e.g., "Use-after-free in SMB connection reuse").*
 
 [Insert Summary Here]
@@ -22,6 +23,8 @@
 * **[00:00]** - Incident occurred or was first detected.
 * **[{{CURRENT_TIME}}]** - Initial triage and investigation commenced.
 * **[00:00]** - Attempted [Action A], resulting in [Outcome A].
+
+### NEXT DAY - [YYYY-MM-DD] (If applicable)
 * **[00:00]** - System restored to standard operation.
 
 ## 3. Risk Assessment
@@ -35,16 +38,12 @@
 | **Low** | Very Low | Low | Medium | Medium | High |
 | **Very Low** | Very Low | Very Low | Low | Medium | Medium |
 
-
-### Risk Asessment Analysis
-| Vulnerability | Threat | Exposure | Risk |
-| :--- | :--- | :--- | :--- |
-| 	 | 	 | 	 | 	 |
-| 	 | 	 | 	 | 	 |
-| 	 | 	 | 	 | 	 |
-| 	 | 	 | 	 | 	 |
-| 	 | 	 | 	 |	 |
-
+### Risk Assessment Analysis
+| Vulnerability / CVE | Severity | Local Exposure / Threat | Risk | Remediation / Fixed In |
+| :--- | :--- | :--- | :--- | :--- |
+| [e.g., CVE-202X-XXXX] | [e.g., High] | [e.g., High - WAN exposed API] | [e.g., Critical] | [e.g., v8.19.0] |
+| | | | | |
+| | | | | |
 
 ## 4. Root Cause Analysis (RCA)
 > *Why did this happen? Focus on the technical failure, process gap, or specific operator error. Strip away emotion; focus on the mechanics of the failure.*
@@ -60,6 +59,12 @@
 
 <!-- SESSION_LOG_START -->
 <!-- SESSION_LOG_END -->
+
+## 5.1 Addendum: [Topic] (Optional)
+> *Use this section for discoveries made during triage that require documentation or deferral, but fall outside the direct scope of the primary remediation (e.g., secondary low-risk vulnerabilities discovered).*
+
+**Appended: [YYYY-MM-DD]**
+[Insert Addendum Here]
 
 ## 6. Lessons Learned & Action Items
 > *What are you changing to prevent this from happening again? This is the most critical section for an employer, as it demonstrates continuous improvement.*

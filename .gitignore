@@ -4,6 +4,7 @@ docs/logs/*.log
 # Metadata for scriptreplay; irrelevant for documentation
 docs/logs/*.timing
 # Filter against .env files
-*.env
+.env
 # Filter against the Ansible keys
 host-configs/ansible/playbooks/openwrt/keys/*
+docker/observability/grafanaloki/alloy/GeoLite2-City.mmdb
