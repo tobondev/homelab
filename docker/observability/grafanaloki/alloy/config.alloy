@@ -184,3 +184,37 @@ loki.source.docker "docker_logs" {
   
   forward_to = [loki.write.local_loki.receiver]
 }
+// ==========================================
+// 8. NGINX LOGS
+// ==========================================
+
+loki.process "nginx_json_parser" {
+  forward_to = [loki.write.local_loki.receiver]
+
+  stage.match {
+    selector = "{container_name=\"tobondev\"}" 
+
+    // 1. Parse incoming JSON log line
+    stage.json {
+      expressions = {
+        // Map the JSON keys to Alloy extraction variables
+        client_ip   = "client_ip",
+        status      = "status",
+        req_method  = "request_method",
+        req_time    = "request_time",
+      }
+    }
+
+    // Promote fields to Loki labels
+    stage.labels {
+      values = {
+        status = "status",
+      }
+    }
+
+    // 3. Format the log line 
+    stage.output {
+      source = "request_uri" 
+    }
+  }
+}

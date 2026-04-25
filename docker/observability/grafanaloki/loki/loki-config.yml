@@ -35,6 +35,7 @@ limits_config:
   max_streams_per_user: 10000
   max_line_size: 256000
   reject_old_samples_max_age: 2880h
+  volume_enabled: true
 
 ruler:
   alertmanager_url: http://localhost:9093
