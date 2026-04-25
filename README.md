@@ -51,7 +51,7 @@ docs/
 - **Bootloader:** systemd-boot, standardized across all systems after deliberate evaluation against GRUB's Argon2ID support limitations at the time of the decision.
 
 ### Disaster Recovery & Availability
-- **Backup Strategy:** Automated 3-2-1 backup architecture managed by `btrbk` and and `rClone`. Local snapshots, cross-host SSH replication (using btrbk's restricted SSH helper to limit key exposure), and offsite cold storage with a 6-month Glacier bucket rotation for cost containment. Implementations are currently undergoing sanitization for public release.
+- **Backup Strategy:** Automated 3-2-1 backup architecture managed by `btrbk` and `rClone`. Local snapshots, cross-host SSH replication (using btrbk's restricted SSH helper to limit key exposure), and offsite cold storage with a 6-month Glacier bucket rotation for cost containment. Implementations are currently undergoing sanitization for public release.
 - **Warm Failback:** Pre-configured standby hardware with a validated rollback path. Architecture supports zero-downtime recovery from most failure scenarios.
 - **Default Known-Good State:** systemd-boot fallback snapshot integration ensures a bootable known-good state is always one selection away; a dynamic replacement for GRUB-btrs using systemdboot is under production.
 
@@ -59,7 +59,7 @@ docs/
 - **Deployment Model:** Modular Docker Compose stacks with BTRFS bind mounts for stateful services, enabling atomic backup and restore of service state alongside container configuration.
 - **Ansible:** Configuration management and automated provisioning across bare-metal and VM infrastructure.
 - **Secrets Management:** Local Vaultwarden instance as the authoritative secrets store; `.env` isolation enforced at the compose level.
-- **Observability:** LGAP stack (Loki, Grafana, Alloy, Prometheus) for centralized telemetry, log aggregation, and alerting across services and infrastructure.
+- **Observability:** Grafana stack (Loki, Grafana, Alloy, Prometheus) for centralized telemetry, log aggregation, and alerting across services and infrastructure.
 - **Testing Pipeline:** QEMU/KVM with Open vSwitch for virtual-to-physical staging, enabling hardware-in-the-loop validation before production deployment.
 
 ### Zero-Trust Ingress
@@ -72,10 +72,10 @@ docs/
 
 The following are in active planning or early implementation. ADRs will be published as decisions are finalized.
 
-- **Active Directory / Azure AD:** Mixed-OS domain integration (Linux + Windows), including RHEL enrollment and Entra ID hybrid scenarios.
-- **Suricata IDS:** IDS system runnig on OPNsense hardware, which provides a first layer of detection and response for robust network security
-- **Wazuh XDR:** Running on virtualized softare, and integrating with OPNsense's wazuh agent to provide network-wide protection,
-- **Centralized Logging with PLGA Stack:** Prometheus, Grafana, Loki and Alloy to allow SIEM integration for log correlation, alert triage, and security event visibility across Network, IDS, IPS, XDR, Hosts and  Docker Stacks.
+- **Active Directory / Azure AD:** Mixed-OS domain integration (Linux + Windows), including RHEL enrollment and Entra ID hybrid scenarios. [In Progress]
+- **Suricata IDS:** IDS system runnig on OPNsense hardware, which provides a first layer of detection and response for robust network security. [Partially deployed. Tuning Monitoring.]
+- **Wazuh XDR:** Deploying Wazuh VM, integrating with OPNsense's wazuh agent to provide network-wide protection. Configure log forwarding to Grafana Stack. [Planned]
+- **Centralized Logging with Grafana Stack:**  Grafana, Loki, Prometheus and Alloy to allow SIEM integration for log correlation, alert triage, and security event visibility across Network, IDS, IPS, XDR, Hosts and  Docker Stacks. [Deployed. Alerting pipeline under development]
 
 ---
 
