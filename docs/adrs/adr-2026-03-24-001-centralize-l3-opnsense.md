@@ -12,7 +12,7 @@ Review-by: 2027-03-24
 ## 1. Context and Problem Statement
 **One-line summary:** Move DHCP, DNS, and firewalling off the OpenWRT Google WiFi node and onto a dedicated OPNsense appliance to remove the L3 single point of failure and enable IDS/IPS and centralized logging.
 
-**Background:** "The current homelab environment relies on a monolithic architecture where a single Google WiFi node (running OpenWRT) acts as the 'Main Node.' This node is a single point of failure (SPOF) for DHCP, DNS, and stateful firewalling." The existing main node is resource-constrained and prevents deployment of modern security services; centralizing L3 on dedicated x86 hardware provides capacity, auditability, and a clear rollback path.
+**Background:** The current homelab environment relies on a monolithic architecture where a single Google WiFi node (running OpenWRT) acts as the 'Main Node.' This node is a single point of failure (SPOF) for DHCP, DNS, and stateful firewalling. The existing main node is resource-constrained and prevents deployment of modern security services; centralizing L3 on dedicated x86 hardware provides capacity, auditability, and a clear rollback path.
 
 # 2. Considered Options (summary table)
 | Option ID | Short name | Description | Security | Cost | Complexity | Time to implement |
