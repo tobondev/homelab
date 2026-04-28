@@ -5,7 +5,8 @@
 **Status:** Resolved
 **Severity:** Medium
 **Services Impacted:** OPNsense Core, Automated Update Services, Remote Backup Scripts (libssh), WAN-facing API clients.
-**CVE ID(s):** CVE-2026-3805, CVE-2026-3783, CVE-2026-3784, CVE-2026-1965, CVE-2025-15224, CVE-2025-15079, CVE-2025-14819, CVE-2025-14524, CVE-2025-14017, CVE-2025-13034,
+**CVE ID(s):** CVE-2026-3805, CVE-2026-3783, CVE-2026-3784, CVE-2026-1965, CVE-2025-15224, CVE-2025-15079, CVE-2025-14819, CVE-2025-14524, CVE-2025-14017, CVE-2025-13034
+
 ---
 
 ## 1. Executive Summary
