@@ -19,6 +19,14 @@ Beyond version-controlled documentation, this repository also serves as the cont
 
 ---
 
+## Documentation Infrastructure: Journal Helper
+
+I ran into documentation friction and solved it by building a tool. Journal Helper is a five-script Bash pipeline that wraps terminal sessions in script(1), injects a note() function for real-time phase annotation, and runs a sequenced perl/col parsing pipeline on exit to clean ANSI noise and inject a phase-separated transcript directly into templated Markdown between invisible HTML sentinels. The template engine auto-discovers entry types, generates sequential IDs for ADRs and runbooks, expands template variables, and self-maintains an ADR index. The session wrapper builds a scoped rc file that suppresses startup noise via stub/unstub without modifying user files, and handles zsh and bash through their correct compatibility mechanisms.
+
+The output of this is the documentation that you are reading:
+
+---
+
 ## Repository Structure
 
 ```
@@ -67,17 +75,6 @@ docs/
 - **Pre-boot remote access:** Static interface IPs configured for tinyssh, enabling encrypted remote access before the main SSH daemon initializes — used for remote LUKS unlock during disaster recovery.
 ---
 
-## Documentation Infrastructure: Journal Helper
-
-Maintaining this level of detailed, enterprise-grade documentation across a homelab without slowing down operational cadence requires dedicated tooling. I ran into severe documentation friction early on—the context switch between executing terminal commands and retroactively writing markdown was leading to sparse notes and lost command outputs. To solve this, I built Journal Helper, a custom Bash pipeline that acts as a dynamic documentation IDE.
-
-Journal Helper wraps all my operational sessions in the `script` utility, tracking terminal I/O natively. It allows me to tag operational phases in real-time using a custom `note()` function injected directly into the session. Upon exiting the terminal, a multi-stage `perl`, `col`, and `awk` parsing pipeline automatically strips ANSI escape codes, unprintable characters, and shell prompt decorations. It then logically separates the transcript based on my phase markers and automatically injects the formatted execution log into a templated Markdown file between hidden HTML sentinels.
-
-This tooling guarantees that every architectural change, runbook execution, and incident response in this repository follows the template, by making formatting invisible. It also guarantees that every Operations Log and Incident Respone document contains the exact, unedited command inputs and outputs—recorded passively while I work, eliminating the friction of manual transcription.
-
-See the tooling in action: `docs/operations/2026-04-10-deploying-a-secrets-management-implementation-with-sops.md`
-
----
 
 ## Planned Work
 
