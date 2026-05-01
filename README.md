@@ -65,6 +65,17 @@ docs/
 ### Zero-Trust Ingress
 - **No open inbound ports.** All external access is routed through Cloudflare Tunnels, with firewall rules validating origin IPs against Cloudflare's published ranges.
 - **Pre-boot remote access:** Static interface IPs configured for tinyssh, enabling encrypted remote access before the main SSH daemon initializes — used for remote LUKS unlock during disaster recovery.
+---
+
+## Documentation Infrastructure: Journal Helper
+
+Maintaining this level of detailed, enterprise-grade documentation across a homelab without slowing down operational cadence requires dedicated tooling. I ran into severe documentation friction early on—the context switch between executing terminal commands and retroactively writing markdown was leading to sparse notes and lost command outputs. To solve this, I built Journal Helper, a custom Bash pipeline that acts as a dynamic documentation IDE.
+
+Journal Helper wraps all my operational sessions in the `script` utility, tracking terminal I/O natively. It allows me to tag operational phases in real-time using a custom `note()` function injected directly into the session. Upon exiting the terminal, a multi-stage `perl`, `col`, and `awk` parsing pipeline automatically strips ANSI escape codes, unprintable characters, and shell prompt decorations. It then logically separates the transcript based on my phase markers and automatically injects the formatted execution log into a templated Markdown file between hidden HTML sentinels.
+
+This tooling guarantees that every architectural change, runbook execution, and incident response in this repository follows the template, by making formatting invisible. It also guarantees that every Operations Log and Incident Respone document contains the exact, unedited command inputs and outputs—recorded passively while I work, eliminating the friction of manual transcription.
+
+See the tooling in action: `docs/operations/2026-04-10-deploying-a-secrets-management-implementation-with-sops.md`
 
 ---
 
