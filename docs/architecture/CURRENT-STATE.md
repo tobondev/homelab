@@ -6,7 +6,7 @@ This document outlines the current architectural state of the homelab environmen
 
 The environment is designed to balance production-grade tooling with deliberate infrastructure volatility. By standardizing on Arch Linux as the bare-metal host OS, the lab acts as an active masterclass in infrastructure architecture, security, and disaster response. 
 
-Leveraging years of muscle memory with Linux, this isn't simply about introducing instability; it is a calculated choice to utilize a familiar but demanding environment to force manual configuration of low-level systems (bootloaders, encryption, filesystems) and stress-test architectural resilience. The Arch Wiki's extensive depth and breadth of knowledge also heavily supported this foundational choice.
+Leveraging a solid foundation in Linux, this isn't simply about introducing instability; it is a calculated choice to utilize a familiar but demanding environment to force manual configuration of low-level systems (bootloaders, encryption, filesystems) and stress-test architectural resilience. The Arch Wiki's extensive depth and breadth of knowledge also heavily supported this foundational choice.
 
 ## 2. Pre-Boot Security & Storage Layer
 
@@ -20,12 +20,12 @@ Holding the homelab to strict data confidentiality standards requires robust dat
 
 ## 3. Disaster Recovery & Availability
 
-The volatility of the core OS requires an automated, highly responsive disaster recovery architecture.
+The volatility of the core OS requires an automated, highly responsive disaster recovery architecture. The environment utilizes a three-tier backup pipeline deployed via custom orchestration scripts in `scripts/admin/backup/`.
 
-* **Snapshot Management:** `btrbk` manages local snapshot scheduling. It was selected for its configuration flexibility and its support for secure snapshot send/receive operations over SSH, utilizing an SSH helper that restricts key access strictly to snapshot management to prevent root compromise.
+* **Tiers 1 & 2 (Warm Backup via btrbk):** Local BTRFS snapshots and remote SSH replication are managed via `btrbk`. Orchestration is handled by `btrbk-deploy.sh`, which dynamically generates systemd `.mount`, `.service`, and `.timer` units from SOPS-encrypted environment files. This delegates mount lifecycles and scheduling entirely to systemd's native dependency graph.
+* **Tier 3 (Cold Archival via rclone):** Offsite synchronization to AWS Glacier Deep Archive is handled by `rclone-run.sh`. To bypass early-deletion penalties and API request fees, the script diffs the most recent BTRFS snapshot against a Last Known Good Backup (LKGB) subvolume. Only the delta changeset is passed to a containerized `rclone` instance for upload.
 * **Known-Good Fallback:** Servers and workstations utilize a systemd-boot fallback snapshot integration. In the event of a system freeze or failed unattended reboot, hosts default to a known-good state for immediate recovery.
 * **Remote Decryption:** Early-boot networking assigns fixed IPs at the interface level to provide a fallback for DHCP failure during the initramfs phase. SSH-remote unlocking is handled via `tinyssh`, utilizing strictly separated SSH keys for disaster recovery versus standard remote access.
-* **Cloud Cost Optimization:** Offsite cloud synchronization relies on a custom script utilizing BTRFS snapshots and `rclone`. A 6-month AWS Glacier bucket rotation strategy is employed to forcefully bypass early-deletion penalties and API request fees, accepting static data duplication as a worthwhile cost-saving measure.
 
 ## 4. Networking & Ingress
 
@@ -36,4 +36,4 @@ The volatility of the core OS requires an automated, highly responsive disaster 
 ## 5. Workloads & Operations
 
 * **Declarative Migration:** Workloads are deployed via Docker Compose paired with BTRFS bind mounts, enabling atomic backups and easy lifecycle management.
-* **Secrets Management:** A locally hosted Vaultwarden instance acts as the centralized password and secret vault. Repository secrets are currently isolated using `.env` files and strict `.gitignore` rules, with an accepted migration path toward SOPS.
+* **Secrets Management:** A locally hosted Vaultwarden instance acts as the centralized password and secret vault. Repository secrets and environment variables are actively being migrated to a fully version-controlled SOPS + age encryption pipeline, as seen in the backup deployment workflows.

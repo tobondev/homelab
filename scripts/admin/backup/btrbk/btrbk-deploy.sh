@@ -50,7 +50,7 @@ source <(echo "$ENV_CONTENT")
 ENV_KEYS=$(echo "$ENV_CONTENT" | grep -v '^[[:space:]]*#' | grep -E '^[A-Za-z_][A-Za-z0-9_]*=' | cut -d'=' -f1)
 
 # Add  dynamically calculated script variables to the list of keys so they get templated
-ENV_KEYS="$ENV_KEYS SSH_USER_CONF SSH_IDENTITY_CONF MOUNT_UNIT_NAME ESCAPED_DEVICE CONFIG_FILE"
+ENV_KEYS="$ENV_KEYS SSH_USER_CONF SSH_IDENTITY_CONF MOUNT_UNIT_NAME ESCAPED_BY_UUID CONFIG_FILE"
 
 ###########################################################################
 # Dynamic Templating Engine
@@ -116,7 +116,7 @@ MOUNT_UNIT_NAME=$(systemd-escape -p --suffix=mount "$MOUNT_LOCATION")
 mkdir -p "$MOUNT_LOCATION"
 
 # Example: /dev/disk/by-uuid/123 -> dev-disk-by\x2duuid-123.device
-ESCAPED_DEVICE=$(systemd-escape -p --suffix=device "$BY_UUID")
+ESCAPED_BY_UUID=$(systemd-escape -p --suffix=device "$BY_UUID")
 
 ###########################################################################
 # Generate and Deploy Units

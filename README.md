@@ -4,9 +4,7 @@
 This repository documents the architecture, operations, and security engineering decisions behind a production-grade homelab I design, operate, and maintain independently. It reflects the kind of work I do: structured change management, documented incident response, automated disaster recovery, and deliberate security architecture across a segmented multi-VLAN environment.
 
 Everything here is real infrastructure. The ADRs were written before or during implementation. The incident reports reflect actual failures and recoveries. The operations logs include timing data from actual deployments.
-If you're evaluating my technical background: start with docs/incidents/for incident response, docs/adrs/ for architectural decision-making, and docs/operations/ for deployment and change management discipline.
-
-
+If you're evaluating my technical background: start with docs/incidents/ for incident response, docs/adrs/ for architectural decision-making, and scripts/admin/backup/ for infrastructure automation design.
 
 The documentation here reflects two distinct phases of the project:
 
@@ -23,7 +21,7 @@ Beyond version-controlled documentation, this repository also serves as the cont
 
 I ran into documentation friction and solved it by building a tool. Journal Helper is a five-script Bash pipeline that wraps terminal sessions in script(1), injects a note() function for real-time phase annotation, and runs a sequenced perl/col parsing pipeline on exit to clean ANSI noise and inject a phase-separated transcript directly into templated Markdown between invisible HTML sentinels. The template engine auto-discovers entry types, generates sequential IDs for ADRs and runbooks, expands template variables, and self-maintains an ADR index. The session wrapper builds a scoped rc file that suppresses startup noise via stub/unstub without modifying user files, and handles zsh and bash through their correct compatibility mechanisms.
 
-The output of this is the documentation that you are reading:
+The output of this is the documentation that you are reading.
 
 ---
 
@@ -35,9 +33,13 @@ docs/
     CURRENT-STATE.md        # Full current-state documentation with trade-off rationale
     DECISIONS-HISTORY.md    # Superseded approaches and why they were retired
   adr/                      # Architectural Decision Records (Phase 2 forward)
-  hardware/
-    INVENTORY.md
   runbooks/                 # Operational procedures and incident response
+scripts/
+  admin/
+    backup/                 # Three-tier backup orchestration and cost-optimization for AWS Glacier
+  utils/
+    journal-helper/         # Documentation pipeline using terminal logs and a dynamic templating engine
+
 ```
 
 ---
@@ -59,7 +61,7 @@ docs/
 - **Bootloader:** systemd-boot, standardized across all systems after deliberate evaluation against GRUB's Argon2ID support limitations at the time of the decision.
 
 ### Disaster Recovery & Availability
-- **Backup Strategy:** Automated 3-2-1 backup architecture managed by `btrbk` and `rClone`. Local snapshots, cross-host SSH replication (using btrbk's restricted SSH helper to limit key exposure), and offsite cold storage with a 6-month Glacier bucket rotation for cost containment. Implementations are currently undergoing sanitization for public release.
+- **Backup Strategy:** Automated 3-2-1 backup architecture managed by `btrbk` and `rClone`. Local snapshots, cross-host SSH replication (using btrbk's restricted SSH helper to limit key exposure), and offsite cold storage with a 6-month Glacier bucket rotation for cost containment.
 - **Warm Failback:** Pre-configured standby hardware with a validated rollback path. Architecture supports zero-downtime recovery from most failure scenarios.
 - **Default Known-Good State:** systemd-boot fallback snapshot integration ensures a bootable known-good state is always one selection away; a dynamic replacement for GRUB-btrs using systemdboot is under production.
 
