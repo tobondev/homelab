@@ -22,7 +22,7 @@ Two constraints shape the overall approach and are worth stating explicitly befo
 
 **The 180-day licensing boundary.** Windows Server Evaluation licenses expire. A domain controller running on a long-lived evaluation VM will accumulate manual state that cannot be cleanly reproduced when the license expires. The two-phase approach, disposable sandbox first, code-defined production second, addresses this directly. Infrastructure defined as code can be rebuilt from scratch without carrying forward manual configuration debt.
 
-**L3 stays on OPNsense.** The Windows Server will not run `RRAS` or `DHCP`. Routing and address management remain centralized on OPNsense, consistent with the decision documented in ADR-007. The Domain Controller is a DNS server and an identity provider, not a network appliance. Keeping it scoped to that role contains the blast radius of any DC failure to identity services only and preserves the existing Layer 3 governance model.
+**L3 stays on OPNsense.** The Windows Server will not run `RRAS` or `DHCP`. Routing and address management remain centralized on OPNsense, consistent with the decision documented in ADR-001. The `Domain Controller` is a `DNS` server and an identity provider, not a network appliance. Keeping it scoped to that role contains the blast radius of any DC failure to identity services only and preserves the existing Layer 3 governance model.
 
 ---
 
@@ -55,6 +55,8 @@ This environment is explicitly ephemeral. Once the client successfully joins the
 ### Architecture
 
 Windows VMs are attached to a dedicated `VLAN` bridge managed by OPNsense. `RRAS` and `DHCP` are removed from the Windows Server entirely. OPNsense retains full Layer 3 governance: `DHCP` leases point `VLAN` clients to the Windows Server exclusively for `DNS` resolution. This is the same decoupling pattern applied to every other service in the lab.
+
+**ARCHITECTURAL CONSIDERATION - Physical Layer Segmentation::** To avoid the encapsulation overhead and MTU constraints that come with VXLAN, the AD VLAN will be physically segmented at  the switch level. An OpenWRT mesh node, utilizing Distributed Switch Architecture over a B.A.T.M.A.N. Advanced wireless backbone, provisions the tagged VLAN directly to a dedicated secondary NIC on the KVM host. This approach prioritizes leveraging existing hardware and architecture, without compromising stability or performance, since it binds virtual machines to the secondary NIC via `macvtap`, which ensures bare-metal Layer 2 Network performance. OPNsense will handle DHCP broadcast network-wide, and the Active Directory Domain Controller will handle DNS and Authentication within the VLAN.
 
 ### Automated Deployment
 
