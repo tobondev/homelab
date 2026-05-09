@@ -1,18 +1,18 @@
 # Roadmap:: Active Directory & Hybrid Identity Engineering
-> **Status:** In Progress — Phase 1 Active
+> **Status:** In Progress — Phase 1 Complete, Phase 2 Planning
 > **Note:** This document outlines a planned engineering initiative to extend the infrastructure detailed in `CURRENT-STATE.md`. It functions as a living project plan and will be iteratively updated, and eventually superseded by formalized Architectural Decision Records (ADRs) and Runbooks as deployment phases are completed.
  **Owner:** @tobondev
- **Updated:** 2026-05-07
+ **Updated:** 2026-05-08
 
 ---
 
 ## Overview
 
-The Hybrid Identity Architecture Project has the goal of developing hands-on experience in a Mixed-OS environment, by using `Windows Server`, `Active Directory`, `Kerberos`, `SSSD`, to deploy an environment to test and manage Identiy and Access Management at scale. Rather than replicating a Windows-native setup in isolation, this architectural project will be integrated with the existing `OPNsense` network infrastructure, by separating `DNS` control inside of a `AD` `VLAN`, which will enable cross-OS authentication, while maintaining DHCP server duties inside `OPNsense`.
+The Hybrid Identity Architecture Project has the goal of developing hands-on experience in a Mixed-OS environment, by using `Windows Server`, `Active Directory`, `Kerberos`, `SSSD`, to deploy an environment to test and manage Identity and Access Management at scale. Rather than replicating a Windows-native setup in isolation, this architectural project will be integrated with the existing `OPNsense` network infrastructure, by separating `DNS` control inside of a `AD` `VLAN`, which will enable cross-OS authentication, while maintaining DHCP server duties inside `OPNsense`.
 
-The project is structured in four phases. Phases 1 and 2 reflect a deliberate two-stage deployment strategy driven by a real infrastructure constraint: the Windows Server Evaluation license expires after 180 days. Rather than treating this as a limitation, the architecture treats it as a forcing function: Phase 1 is ephemeral by design, and Phase 2 automates the rebuild path via Terraform so the domain can be reconstructed from code on demand. An environment that can be destroyed and rebuilt in minutes doesn't have a licensing problem. It has a deployment pipeline.
+The project is structured in five phases. Phases 1 and 2 reflect a deliberate two-stage deployment strategy driven by a real infrastructure constraint: the Windows Server Evaluation license expires after 180 days. Rather than treating this as a limitation, the architecture treats it as a forcing function: Phase 1 is ephemeral by design, and Phase 2 automates the rebuild path via Terraform so the domain can be reconstructed from code on demand. An environment that can be destroyed and rebuilt in minutes doesn't have a licensing problem. It has a deployment pipeline.
 
-This document is a living project plan. It defines scope, phases, expected artifacts, and fault injection scenarios before implementation begins. It will be updated as phases complete and eventually superseded by the ADRs, runbooks, and incident reports it references.
+This document is a living project plan. It defines scope, phases, expected artifacts, and a consolidated offensive/defensive testing phase. It will be updated as phases complete and eventually superseded by the ADRs, runbooks, and incident reports it references.
 
 ---
 
@@ -26,41 +26,50 @@ Two constraints shape the overall approach and are worth stating explicitly befo
 
 ---
 
-## Phase 1: Isolated Sandbox
+## Phase 1: Isolated GUI Sandbox
 
-**Goal:** Understand the Windows Server operational model and develop automation tooling without exposure to the primary network or production systems.
-**Status:** Active
+**Goal:** Understand the Windows Server operational model through direct, GUI-driven interaction with no exposure to the primary network. Develop and validate a foundational PowerShell user provisioning capability.
+**Status:** Complete
 
 ### Architecture
 
-A fully isolated QEMU/KVM virtual network (`AD-Sandbox-LAN`) with no routing path to the primary network. Manual deployment of Windows Server 2025 and a Windows 11 client. In this phase, the server runs the full Windows-native stack:  `RRAS/NAT`, `DHCP`, `DNS`, and `AD DS`. This is intentional: Phase 1 is about understanding how the ecosystem works before dismantling parts of it.
+Fully isolated QEMU/KVM virtual network (`AD-Sandbox-LAN`) with no routing path to the primary network. Manual deployment of Windows Server 2025 and a Windows 11 client. In this phase, the server runs the full Windows-native stack: `RRAS/NAT`, `DHCP`, `DNS`, and `AD DS`. This is intentional: Phase 1 is about understanding how the ecosystem works before dismantling parts of it.
 
 ### Objectives
 
-- Understand the `AD DS` promotion process, `DNS` zone configuration, and the client domain join sequence.
-- Develop and validate the `PowerShell` bulk user provisioning script that carries forward into Phase 2.
-- Build familiarity with the Windows event log structure (Security, System, and Directory Service channels) before production observability is in place.
+- Promote a Domain Controller, configure Active Directory-integrated DNS zones, and join a client to the domain using the GUI toolchain.
+- Deploy and validate a simple PowerShell user provisioning script that reads a plaintext username list and creates domain users with a uniform password. This script establishes the baseline automation pattern that will be extended in Phase 2 with a JSON schema.
+- Build a QEMU internal snapshot of the pre-joined client to serve as a rapidly deployable baseline for future phases.
+- Document the complete build process in a timestamped operations log.
 
 ### Lifecycle
 
-This environment is explicitly ephemeral. Once the client successfully joins the domain and the PowerShell provisioning suite is validated and tested (including the fault injection scenarios defined below) the VMs are destroyed. Nothing from this phase is carried forward except the scripts and their documentation.
+This environment is ephemeral. The VMs are rebuilt from scratch, the provisioning script is executed against the clean domain, and the client is snapshotted in its pre-joined state. At the end of the phase, only the operations log, the provisioning script, and the snapshot remain.
 
 ---
 
 ## Phase 2: Production Integration
 
-**Goal:** Deploy Active Directory as a code-defined, observable service integrated with the existing production infrastructure.
+**Goal:** Deploy Active Directory as a code-defined, observable service integrated with the existing production infrastructure, using enterprise-standard Server Core and a declarative JSON provisioning schema.
 **Status:** Planned
 
 ### Architecture
 
 Windows VMs are attached to a dedicated `VLAN` bridge managed by OPNsense. `RRAS` and `DHCP` are removed from the Windows Server entirely. OPNsense retains full Layer 3 governance: `DHCP` leases point `VLAN` clients to the Windows Server exclusively for `DNS` resolution. This is the same decoupling pattern applied to every other service in the lab.
 
-**ARCHITECTURAL CONSIDERATION - Physical Layer Segmentation::** To avoid the encapsulation overhead and MTU constraints that come with VXLAN, the AD VLAN will be physically segmented at  the switch level. An OpenWRT mesh node, utilizing Distributed Switch Architecture over a B.A.T.M.A.N. Advanced wireless backbone, provisions the tagged VLAN directly to a dedicated secondary NIC on the KVM host. This approach prioritizes leveraging existing hardware and architecture, without compromising stability or performance, since it binds virtual machines to the secondary NIC via `macvtap`, which ensures bare-metal Layer 2 Network performance. OPNsense will handle DHCP broadcast network-wide, and the Active Directory Domain Controller will handle DNS and Authentication within the VLAN.
+**ARCHITECTURAL CONSIDERATION - Physical Layer Segmentation::** To avoid the encapsulation overhead and MTU constraints that come with VXLAN, the AD VLAN will be physically segmented at the switch level. An OpenWRT mesh node, utilizing Distributed Switch Architecture over a B.A.T.M.A.N. Advanced wireless backbone, provisions the tagged VLAN directly to a dedicated secondary NIC on the KVM host. This approach prioritizes leveraging existing hardware and architecture, without compromising stability or performance, since it binds virtual machines to the secondary NIC via `macvtap`, which ensures bare-metal Layer 2 Network performance. OPNsense will handle DHCP broadcast network-wide, and the Active Directory Domain Controller will handle DNS and Authentication within the VLAN.
+
+### Server Core & PowerShell Remoting
+
+The Domain Controller is deployed as Windows Server Core — the enterprise-standard reduced-attack-surface installation option. Management and provisioning are performed entirely via PowerShell Remoting and `sconfig`. This enforces the CLI discipline introduced conceptually through Phase 1's GUI comprehension.
+
+### JSON User Provisioning Schema
+
+The Phase 1 plaintext provisioning script is replaced with a declarative JSON schema that defines users, passwords, group memberships, and attribute sets in a single source of truth. This schema is designed to be extensible: when the environment expands in later phases to include Kerberoastable service accounts and intentionally misconfigured ACLs, the same JSON document is the single declarative source of the entire lab's user state. The format also aligns with LogQL queries in Loki and Grafana dashboard provisioning, reinforcing the observability pipeline.
 
 ### Automated Deployment
 
-The `dmacvicar/libvirt` Terraform provider provisions the Windows Server and client instances declaratively against the existing `QEMU/KVM` host. This directly addresses the 180-day evaluation constraint: the domain is code, not a running VM, and can be rebuilt on demand without manual intervention. It also enforces the same infrastructure discipline applied to every other infrastructure project: documented, automated, reproduceable. 
+The `dmacvicar/libvirt` Terraform provider provisions the Windows Server and client instances declaratively against the existing `QEMU/KVM` host. This directly addresses the 180-day evaluation constraint: the domain is code, not a running VM, and can be rebuilt on demand without manual intervention. It also enforces the same infrastructure discipline applied to every other infrastructure project: documented, automated, reproducible.
 
 ### Observability
 
@@ -99,7 +108,7 @@ A `RHEL` VM is deployed alongside the Windows client on the HybridAD `VLAN`. The
 - `krb5` handles `Kerberos` ticket operations
 - `PAM` enforces session control and access policy at login
 
-Each layer has its own log surface, and each is exercised by the fault injection scenarios defined below.
+Each layer has its own log surface, and each is exercised by the fault injection scenarios defined in Phase 5.
 
 ### Objectives
 
@@ -110,57 +119,29 @@ Each layer has its own log surface, and each is exercised by the fault injection
 
 ---
 
-## Fault Injection Scenarios
+## Phase 5: Offensive Security & Defensive Analysis
 
-These are deliberately engineered failure scenarios. Each one is induced with a known cause, diagnosed through the correct log surfaces, resolved, and documented. The intent is to demonstrate familiarity with where Windows and Linux record identity failures, how to read those records, and what remediation looks like — not to simulate accidents.
+**Goal:** Expose the Active Directory environment to deliberate attack techniques and document the defensive telemetry each one generates.
+**Status:** Planned
 
-Each scenario is documented using the incident format in docs/incidents/, with the preamble explicitly noting that the failure was engineered.
+### Architecture
 
-### Scenario 1 — Password Policy Violation in Bulk Provisioning
+Using the JSON-defined lab state from Phase 2, the environment is populated with users and configurations that create realistic attack paths (Kerberoastable service accounts, excessive ACL permissions, etc.). Offensive tools are run from a dedicated attack host, while the Windows Server's event logs are streamed into Loki and analyzed in Grafana. A repeatable QEMU snapshot restore path ensures the domain can be returned to a known-clean state between exercises.
 
-**Phase:** 1 / 2
-**Induced by:** Embedding a non-compliant password in the PowerShell provisioning dataset
+### Objectives
 
-**Expected failure mode:**
-New-ADUser returns a policy violation error.
+- Execute Bloodhound collection against the domain and map paths to Domain Admin.
+- Perform Kerberoasting and capture TGS hashes.
+- Conduct password spraying with CrackMapExec and observe account lockout policy behavior.
+- For each technique, produce an incident report that correlates the attack action with the corresponding Windows Security Event IDs, log entries, and policy enforcement behavior. The deliverable is not the attack — it is the defensive analysis.
 
-**Diagnostic path:**
-Windows Security event log — Event ID 4723, 4725, 4740
+### Fault Injection (Consolidated)
 
-**Documentation goal:**
-Validate password policy enforcement and logging fidelity
+All engineered failure scenarios are executed here within a fully instrumented environment. Each one is induced with a known cause, diagnosed through the correct log surfaces, resolved, and documented using the standard incident report format, with the preamble explicitly noting that the failure was engineered.
 
----
-
-### Scenario 2 — DNS Resolution Failure Before Domain Join
-
-**Phase:** 4
-**Induced by:** Incorrect DNS configuration
-
-**Expected failure mode:**
-realm discover fails
-
-**Diagnostic path:**
-nslookup, dig, /etc/resolv.conf, systemd-resolved
-
-**Documentation goal:**
-Reinforce DNS as a hard dependency for identity services
-
----
-
-### Scenario 3 — Kerberos Clock Skew on RHEL Domain Join
-
-**Phase:** 4
-**Induced by:** NTP drift
-
-**Expected failure mode:**
-KRB5KRB_AP_ERR_SKEW
-
-**Diagnostic path:**
-kinit, sssd logs, timedatectl
-
-**Documentation goal:**
-Establish time sync as a critical prerequisite
+- **Password Policy Violation:** Embedding a non-compliant password in the JSON provisioning dataset to validate enforcement and Event ID logging.
+- **DNS Resolution Failure:** Incorrect DNS configuration before a domain join, diagnosed with `nslookup`, `dig`, and `systemd-resolved`.
+- **Kerberos Clock Skew:** NTP drift on the RHEL endpoint, producing `KRB5KRB_AP_ERR_SKEW` and validating time sync as a critical prerequisite.
 
 ---
 
@@ -168,12 +149,17 @@ Establish time sync as a critical prerequisite
 
 | Artifact Type | Phase | Status |
 |--------------|-------|--------|
-| PowerShell User Provisioning Suite | 1 → 2 | In Progress |
+| PowerShell User Provisioning Suite (MVP) | 1 → 2 | Complete |
+| Operations Log — Phase 1 Build & Snapshot | 1 | In Progress |
 | ADR: L3 Routing Governance — Windows RRAS vs. OPNsense | 2 | Planned |
 | ADR: Ephemeral Windows Infrastructure via Terraform | 2 | Planned |
+| JSON User Provisioning Schema & Script | 2 | Planned |
 | Grafana Dashboard — Windows Security Events & Suricata | 2 | Planned |
 | Runbook: Entra ID Connect | 3 | Planned |
 | Runbook: RHEL Domain Join | 4 | Planned |
-| Fault Injection Report: Password Policy Violation | 1 / 2 | Planned |
-| Fault Injection Report: DNS Resolution Failure | 4 | Planned |
-| Fault Injection Report: Kerberos Clock Skew | 4 | Planned |
+| Incident Report: Password Policy Violation | 5 | Planned |
+| Incident Report: DNS Resolution Failure | 5 | Planned |
+| Incident Report: Kerberos Clock Skew | 5 | Planned |
+| Incident Report: Bloodhound Collection Analysis | 5 | Planned |
+| Incident Report: Kerberoasting Detection | 5 | Planned |
+| Incident Report: Password Spray Detection | 5 | Planned |
