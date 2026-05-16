@@ -27,28 +27,57 @@ prometheus.remote_write "local_prometheus" {
 // 3. RECEIVERS (OPNsense Telemetry)
 // ==========================================
 
-// Syslog listener for OPNsense Firewall, Suricata, and Wazuh alerts
 loki.source.syslog "opnsense_syslog" {
   listener {
-    // Listening on an unprivileged port mapped in docker-compose.yml
     address  = "0.0.0.0:5140"
     protocol = "udp"
   }
-
-  // Forward the raw syslog data to our processing stage below
+  // Back to the stable forwarder
   forward_to = [loki.process.opnsense_labels.receiver]
 }
 
-// Processing stage to attach our custom static labels
 loki.process "opnsense_labels" {
+
+  // 1. Tag everything with the baseline job first so we can filter on it
   stage.static_labels {
     values = {
       job      = "opnsense_telemetry",
       instance = "lenovo-m920q",
     }
   }
-  
-  // Forward the newly labeled logs to the final destination
+
+  // 2. Drop the B.A.T.M.A.N. noise
+  stage.drop {
+    expression = "arp: 43:05:43:05.*is multicast"
+  }
+
+  // 3. Isolate and Parse Unbound Logs
+  // We use LogQL to select lines starting with [Numbers:Numbers]
+  stage.match {
+    selector = "{job=\"opnsense_telemetry\"} |~ \"^\\\\[\\\\d+:\\\\d+\\\\]\""
+
+    // If it matches the brackets, we know it's Unbound. Inject the label back in!
+    stage.static_labels {
+      values = {
+        program = "unbound",
+      }
+    }
+    stage.regex {
+      expression = "(?P<dns_action>\\S+): (?P<dns_client_ip>[\\d.]+) (?P<dns_domain>\\S+) (?P<dns_query_type>\\S+) (?P<dns_rcode>\\S+)"
+    }
+
+    // Promote the extracted groups to indexed Loki labels
+    stage.labels {
+      values = {
+        action     = "dns_action",
+        client_ip  = "dns_client_ip",
+        query_type = "dns_query_type",
+        domain     = "dns_domain",
+        rcode      = "dns_rcode",
+      }
+    }
+  }
+
   forward_to = [loki.write.local_loki.receiver]
 }
 // ==========================================
@@ -65,13 +94,13 @@ loki.source.syslog "suricata_syslog" {
 }
 
 loki.process "suricata_parser" {
-  
+
   // 1. Fix the snippet's broken hostname logic + add your baseline tags
   stage.static_labels {
     values = {
       job      = "suricata_ids",
       instance = "lenovo-m920q",
-      hostname = "OPNsense", 
+      hostname = "OPNsense",
     }
   }
 
@@ -94,7 +123,7 @@ loki.process "suricata_parser" {
   }
 
 // ==========================================
-// GEO-IP ENRICHMENT 
+// GEO-IP ENRICHMENT
 // ==========================================
    stage.geoip {
      source  = "srcip"
@@ -128,10 +157,10 @@ forward_to = [loki.write.local_loki.receiver]
 }
 
 // ==========================================
-// 5. BASIC HOST METRICS 
+// 5. BASIC HOST METRICS
 // ==========================================
 
-// By bind mounting /proc and /sys in docker-compose.yml, 
+// By bind mounting /proc and /sys in docker-compose.yml,
 // we can scrape our host's hardware metrics.
 prometheus.exporter.unix "host_system" {
   procfs_path = "/proc"
@@ -149,7 +178,7 @@ prometheus.scrape "host_metrics" {
 
 // Discover all running Docker containers
 discovery.docker "local_containers" {
-  host = "tcp://dockerproxy:2375" 
+  host = "tcp://dockerproxy:2375"
   // (Note: use your tcp:// proxy address here if you chose Option 2 earlier)
 }
 
@@ -160,10 +189,10 @@ discovery.relabel "container_names" {
   // Rule 1: Extract the container name and strip the leading slash
   rule {
     source_labels = ["__meta_docker_container_name"]
-    regex         = "/(.*)" 
+    regex         = "/(.*)"
     target_label  = "container_name"
   }
-  
+
   // Rule 2 Grab the compose service name too
   rule {
     source_labels = ["__meta_docker_network_compose_service"]
@@ -175,46 +204,93 @@ discovery.relabel "container_names" {
 // 7. DOCKER LOGS
 // ==========================================
 
-// Scrape the logs, using the newly relabeled targets
 loki.source.docker "docker_logs" {
   host       = "tcp://dockerproxy:2375"
-  
-  // Targets now points to the relabeled output\
-  targets    = discovery.relabel.container_names.output 
-  
-  forward_to = [loki.write.local_loki.receiver]
+  targets    = discovery.relabel.container_names.output
+
+  // 1. Route to the parser instead of the database
+  forward_to = [loki.process.nginx_router.receiver]
 }
+
 // ==========================================
 // 8. NGINX LOGS
 // ==========================================
 
-loki.process "nginx_json_parser" {
+loki.process "nginx_router" {
   forward_to = [loki.write.local_loki.receiver]
 
+  // 2. Only run this heavy processing on your specific web container
   stage.match {
-    selector = "{container_name=\"tobondev\"}" 
+    selector = "{container_name=\"tobondev\"}"
 
-    // 1. Parse incoming JSON log line
     stage.json {
       expressions = {
-        // Map the JSON keys to Alloy extraction variables
-        client_ip   = "client_ip",
-        status      = "status",
-        req_method  = "request_method",
-        req_time    = "request_time",
+        client_ip         = "client_ip",
+        status            = "status",
+        req_method        = "request_method",
+        req_time          = "request_time",
+        request_uri       = "request_uri",
+        http_referrer     = "http_referrer",
+        http_user_agent   = "http_user_agent",
+        body_bytes_sent   = "body_bytes_sent",
+        x_forwarded_for   = "x_forwarded_for",
       }
     }
 
-    // Promote fields to Loki labels
+    stage.regex {
+      source     = "x_forwarded_for"
+      expression = "^(?P<real_ip>[^, ]+)"
+    }
+
+    // 3. Explicitly check that real_ip is not a hyphen
+    stage.template {
+      source   = "real_ip"
+      template = "{{ if and .real_ip (ne .real_ip \"-\") }}{{ .real_ip }}{{ else }}{{ .client_ip }}{{ end }}"
+    }
+
+    stage.geoip {
+      source  = "real_ip"
+      db      = "/etc/alloy/GeoLite2-City.mmdb"
+      db_type = "city"
+    }
+
+    stage.regex {
+      source     = "request_uri"
+      expression = ".*[?&]utm_source=(?P<utm_source>[^&]+).*"
+    }
+    stage.regex {
+      source     = "request_uri"
+      expression = ".*[?&]utm_medium=(?P<utm_medium>[^&]+).*"
+    }
+    stage.regex {
+      source     = "request_uri"
+      expression = ".*[?&]utm_campaign=(?P<utm_campaign>[^&]+).*"
+    }
+
+    stage.static_labels {
+      values = {
+        traffic_type = "human",
+      }
+    }
+
     stage.labels {
       values = {
-        status = "status",
+        status          = "status",
+        geo_country     = "geoip_country_name",
+        geo_city        = "geoip_city_name",
+        geo_latitude    = "geoip_location_latitude",
+        geo_longitude   = "geoip_location_longitude",
+        utm_source      = "utm_source",
+        utm_medium      = "utm_medium",
+        utm_campaign    = "utm_campaign",
+        http_referrer   = "http_referrer",
+        http_user_agent = "http_user_agent",
+        request_uri     = "request_uri",
+        remote_user     = "remote_user",
+        request         = "request",
       }
     }
 
-    // 3. Format the log line 
-    stage.output {
-      source = "request_uri" 
-    }
+    // 4. Removed stage.output to preserve the JSON payload
   }
 }
