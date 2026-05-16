@@ -61,8 +61,8 @@ Following the successful clean configuration, inter-VLAN routing and internet ga
 * **Result:** Confirmed that Zero-Trust inter-VLAN blocking remains fully functional and unaffected by the physical hardware swap.
 
 ### Next Steps
-- [x] **Completed:** Drafted and tested MVP OPNsense configuration.
-- [x] **Completed:** Outlined maintenance window and executed production deployment.
-- [x] **Completed:** Synchronized OpenWRT configurations and backed up settings.
-- [ ] **Pending:** Configure centralized logging using syslog to forward metrics to the server running Grafana/Loki/Alloy.
-- [x] **Completed:** Decommission the old main OpenWRT node and place it into cold storage as a pre-configured fallback device.
+- [x] **Completed:** Drafted and tested MVP OPNsense configuration. (2026-03-31)
+- [x] **Completed:** Outlined maintenance window and executed production deployment. (2026-03-31)
+- [x] **Completed:** Synchronized OpenWRT configurations and backed up settings.(2026-03-31)
+- [x] **Completed:** Configure centralized logging using syslog to forward metrics to the server running Grafana/Loki/Alloy. (2026-04-04)
+- [x] **Completed:** Decommission the old main OpenWRT node and place it into cold storage as a pre-configured fallback device. (2026-03-31)

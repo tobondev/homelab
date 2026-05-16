@@ -1,4 +1,4 @@
-# Sysadmin Log: Hybrid OS Lab Phase 1
+# Sysadmin Log: Hybrid OS Lab Stage 1
 
 **Date:** 2026-05-08
 **Report Time:** 11:38
@@ -11,21 +11,21 @@
 
 
 
-**One-line summary:** Phase 1 of the Hybrid Identity Architecture Project consists of an Isolated Windows Active Directory sandbox, containing a DC and a Windows 11 client.
+**One-line summary:** Stage 1 of the Hybrid Identity Architecture Project consists of an Isolated Windows Active Directory sandbox, containing a DC and a Windows 11 client.
 
-**Background:** The current Infrastructure Architecture focuses heavily on Linux. Phase 1 of the Hybrid OS Lab creates a fully isolated Windows testbed to develop hands-on experience with Active Directory Domain Services, PowerShell Scripting, DNS and DHCP (in the context of AD). The Sandbox architecture builds an isolated Windows-native network stack: the Domain Controller runs RRAS/NAT, DHCP, DNS and AD DS. This ensures the foundational knowledge of Active Directory architecture supports the Phase 2 buildout, which integrates Active Directory into the existing OPNsense Network Topology (which requires separating DNS duties in a segmented VLAN, and relegating DHCP to OPNsense).
+**Background:** The current Infrastructure Architecture focuses heavily on Linux. Stage 1 of the Hybrid OS Lab creates a fully isolated Windows testbed to develop hands-on experience with Active Directory Domain Services, PowerShell Scripting, DNS and DHCP (in the context of AD). The Sandbox architecture builds an isolated Windows-native network stack: the Domain Controller runs RRAS/NAT, DHCP, DNS and AD DS. This ensures the foundational knowledge of Active Directory architecture supports the Stage 2 buildout, which integrates Active Directory into the existing OPNsense Network Topology (which requires separating DNS duties in a segmented VLAN, and relegating DHCP to OPNsense).
 
 
 
 ## 2. Architectural Decisions & Strategy
 
-Since Windows Active Directory is inseparable from DNS, this presents a series of challenges for an infrastructure with OPNsense at its core, handling DNS and DHCP. Phase 1 solves this by embracing complete isolation in a Dual-NAT setup, which has the benefit of providing hands-on experience with the Domain Controller handling DNS and RRAS. Phase 2 will focus on a hybrid solution that uses VLAN separation and DNS forwarding.
+Since Windows Active Directory is inseparable from DNS, this presents a series of challenges for an infrastructure with OPNsense at its core, handling DNS and DHCP. Stage 1 solves this by embracing complete isolation in a Dual-NAT setup, which has the benefit of providing hands-on experience with the Domain Controller handling DNS and RRAS. Stage 2 will focus on a hybrid solution that uses VLAN separation and DNS forwarding.
 
 
-### Decision 1: GUI MVP for Phase 1 - CLI for Phase 2
+### Decision 1: GUI MVP for Stage 1 - CLI for Stage 2
 
-**Decision:** Configure Windows Server as Domain Controller using the GUI, for Phase 1, then destroy the VM and move on to CLI and automated deployment for Phase 2.
-**Rationale:** Descriptions, images and configuration wizards provide guidance for configuration that goes further in the learning process than typing a command would: by separating steps and slowing down in the way that GUI use requires, the GUI-based MVP forces an understanding of the underlying structures and steps required to promote a server to Domain Controller, set-up DNS and RRAS. CLI provisioning knowledge is required for deploying at scale, and the knowledge built from Phase 1 will be used in the development and deployment of Phase 2.
+**Decision:** Configure Windows Server as Domain Controller using the GUI, for Stage 1, then destroy the VM and move on to CLI and automated deployment for Stage 2.
+**Rationale:** Descriptions, images and configuration wizards provide guidance for configuration that goes further in the learning process than typing a command would: by separating steps and slowing down in the way that GUI use requires, the GUI-based MVP forces an understanding of the underlying structures and steps required to promote a server to Domain Controller, set-up DNS and RRAS. CLI provisioning knowledge is required for deploying at scale, and the knowledge built from Stage 1 will be used in the development and deployment of Stage 2.
 
 ### Decision 2: QEMU Snapshots for Baseline Client Configuration
 
@@ -34,13 +34,13 @@ Since Windows Active Directory is inseparable from DNS, this presents a series o
 
 ### Decision 3: Limited Scope for Graphical Documentation
 
-**Decision:** Embrace the need for Graphical Documentation as a trade-off stemming from the GUI-first approach for Phase 1.
-**Rationale:** While existing documentation has focused on terminal logs and text-based artifacts, the virtualized, cross-os and GUI-heavy nature of the project, but especially Phase 1, requires documenting with images. All images live inside `docs/artifacts/hybrid-os-lab-p1` and are linked inline.
+**Decision:** Embrace the need for Graphical Documentation as a trade-off stemming from the GUI-first approach for Stage 1.
+**Rationale:** While existing documentation has focused on terminal logs and text-based artifacts, the virtualized, cross-os and GUI-heavy nature of the project, but especially Stage 1, requires documenting with images. All images live inside `docs/artifacts/hybrid-os-lab-stage-1` and are linked inline.
 
 ### Decision 4: Designate tobon.dev as the forest root domain
 
-**Decision:** Use tobon.dev as the forest root for the AD deployment from Phase 1 on.
-**Rationale:** Entra ID Connect requires a verified public domain for UPN suffix validation. Rather than producing documentation and artifacts that have to be reworked for Phase 3, the decision is made to use the existing tobon.dev domain for all phases.
+**Decision:** Use tobon.dev as the forest root for the AD deployment from Stage 1 on.
+**Rationale:** Entra ID Connect requires a verified public domain for UPN suffix validation. Rather than producing documentation and artifacts that have to be reworked for Stage 3, the decision is made to use the existing tobon.dev domain for all stages.
 
 ## 3. Implementation & Execution
 
@@ -49,24 +49,28 @@ Since Windows Active Directory is inseparable from DNS, this presents a series o
 
 An isolated QEMU virtual network named `AD-Sandbox-LAN` was created with no external routing, ensuring the sandbox has zero connectivity to the primary network. IPv4 addressing, subnet mask, and DHCP range were assigned. The network is fully self-contained; the Domain Controller will itself provide DHCP and NAT services.
 
-![Isolated Virtual Network](../artifacts/hybrid-os-lab-p1/2026-05-08_Isolated-Virtual-Network.png)
+![Isolated Virtual Network](../artifacts/hybrid-os-lab-stage-1/2026-05-08_Isolated-Virtual-Network.png)
 NOTE: While QEMU initially serves as DHCP server and sets an IP range, this is superseded by the AD DC DHCP Server's configuration.
 
-The Domain Controller VM was provisioned with 64 GB of virtual disk (thin-provisioned, qcow2) and 8 GB of RAM, running under the system session (`QEMU/KVM - System`) to enable `macvtap` passthrough. The modest storage reflects the ephemeral nature of the sandbox; Phase 2 will allocate larger volumes.
+The Domain Controller VM was provisioned with 64 GB of virtual disk (thin-provisioned, qcow2) and 8 GB of RAM, running under the system session (`QEMU/KVM - System`) to enable `macvtap` passthrough. The modest storage reflects the ephemeral nature of the sandbox; Stage 2 will allocate larger volumes.
 
-![AD DC VM Overview](../artifacts/hybrid-os-lab-p1/2026-05-08_AD-DC-MVP-VM.png)
-![AD DC VTAP](../artifacts/hybrid-os-lab-p1/2026-05-08_AD-DC-VTAP.png)
-![AD DC Networks](../artifacts/hybrid-os-lab-p1/2026-05-08_AD-DC-Sandbox-and-VTAP.png)
+![AD DC VM Overview](../artifacts/hybrid-os-lab-stage-1/2026-05-08_AD-DC-MVP-VM.png)
+
+![AD DC VTAP](../artifacts/hybrid-os-lab-stage-1/2026-05-08_AD-DC-VTAP.png)
+
+![AD DC Networks](../artifacts/hybrid-os-lab-stage-1/2026-05-08_AD-DC-Sandbox-and-VTAP.png)
 
 Windows Server 2025 (Desktop Experience) was installed manually via ISO.
 
-![Server GUI Install](../artifacts/hybrid-os-lab-p1/2026-05-08_AD-DC-Server-GUI-INSTALL.png)
+![Server GUI Install](../artifacts/hybrid-os-lab-stage-1/2026-05-08_AD-DC-Server-GUI-INSTALL.png)
 
 A Windows 11 Pro client VM was provisioned with 4GB of RAM and attached exclusively to `AD-Sandbox-LAN`. The Windows 11 OOBE network requirement was bypassed using `BypassNRO` to create a local account offline.
 
-![Client VM](../artifacts/hybrid-os-lab-p1/2026-05-08_AD-Client-MVP-VM.png)
-![AD Client Network](../artifacts/hybrid-os-lab-p1/2026-05-08_AD-Client-Sandbox.png)
-![Client Install](../artifacts/hybrid-os-lab-p1/2026-05-08_AD-Client-INSTALL.png)
+![Client VM](../artifacts/hybrid-os-lab-stage-1/2026-05-08_AD-Client-MVP-VM.png)
+
+![AD Client Network](../artifacts/hybrid-os-lab-stage-1/2026-05-08_AD-Client-Sandbox.png)
+
+![Client Install](../artifacts/hybrid-os-lab-stage-1/2026-05-08_AD-Client-INSTALL.png)
 
 VirtIO guest drivers were installed on both VMs using `virtio-win.iso` from AUR. A QEMU internal snapshot named `Win11Client_Base` was taken on the client after guest driver installation, but before domain-join. This is the baseline client image that can be replicated in future mass deployment exercises.
 
@@ -79,8 +83,9 @@ Domain Controller Promotion (GUI path):
 
 Active Directory Domain Services role was added via Server Manager. A new forest root domain `tobon.dev` was created. The DSRM password was set, NetBIOS name `TOBONDEV` was accepted, and default paths for database, logs, and SYSVOL were retained. DNS was integrated.
 
-![Roles and Features](../artifacts/hybrid-os-lab-p1/2026-05-08_AD-DC_Roles-Features.png)
-![Promotion Confirmation](../artifacts/hybrid-os-lab-p1/2026-05-08_AD-DC-Server-PROMOTION.png)
+![Roles and Features](../artifacts/hybrid-os-lab-stage-1/2026-05-08_AD-DC_Roles-Features.png)
+
+![Promotion Confirmation](../artifacts/hybrid-os-lab-stage-1/2026-05-08_AD-DC-Server-PROMOTION.png)
 
 During the promotion process, the equivalent PowerShell deployment script was captured for future automation:
 
@@ -106,7 +111,7 @@ Install-ADDSForest `
 
 During promotion, the Server reported a dependency error. The feature installation wizard was opened again, and all selected features had been installed correctly. This suggested a race condition, where a service had attempted to start before a dependency was installed/launched, or before a mandated reboot, which had not been alerted. A reboot of the Server VM was performed. The promotion wizard was run again, using the exact configuration described in the PowerShell script above, which was now successful.
 
-After promotion, DHCP was configured with a scope of .150–.250 on the sandbox subnet, and the scope was authorized. RRAS/NAT was configured to provide internet access from the client through the DC’s second interface; this will be removed in Phase 2.
+After promotion, DHCP was configured with a scope of .150–.250 on the sandbox subnet, and the scope was authorized. RRAS/NAT was configured to provide internet access from the client through the DC’s second interface; this will be removed in Stage 2.
 
 **Client Domain Join & Troubleshooting**
 
@@ -169,36 +174,36 @@ foreach ($n in $USER_FIRST_LAST_LIST) {
                -Enabled $true
 }
 ```
-![User Provisioning](../artifacts/hybrid-os-lab-p1/2026-05-08_AD-User-Provisioning.png)
+![User Provisioning](../artifacts/hybrid-os-lab-stage-1/2026-05-08_AD-User-Provisioning.png)
 
 
-This is the foundation from which the Phase 2 script will be built, using a JSON schema, more in line with John Hammond's approach to AD provisioning.
+This is the foundation from which the Stage 2 script will be built, using a JSON schema, more in line with John Hammond's approach to AD provisioning.
 Domain users were successfully created and visible under Active Directory Users and Computers. A test login from the client using one of the provisioned accounts succeeded.
 
 
 ## 4. Outcome & Future Considerations
 
-* **Result:** Phase 1 is complete. A fully isolated Active Directory sandbox was built from scratch, a GUI-driven Domain Controller promoted, a client joined after diagnosing a non-obvious service-ready delay, and a PowerShell user provisioning script validated. A QEMU snapshot baseline preserves the domain-joined client for future phases.
+* **Result:** Stage 1 is complete. A fully isolated Active Directory sandbox was built from scratch, a GUI-driven Domain Controller promoted, a client joined after diagnosing a non-obvious service-ready delay, and a PowerShell user provisioning script validated. A QEMU snapshot baseline preserves the domain-joined client for future stages.
  
 
 * **Diagnostic Knowledge:** The troubleshooting chain from DNS, KDC, Netlogon, firewall profile, suffix, DCDIAG, SRV records to nltest was fully exercised and documented. While unexpected, the domain join failure provides more hands-on experience with diagnostic tools and common Active Directory Domain issues, and is welcome as portfolio experience. 
 
 * **Technical Debt / Disposables:**
 
-- The server VM is ephemeral. It is destroyed at the start of Phase 2, in order to create a Server Core VM.
+- The server VM is ephemeral. It is destroyed at the start of Stage 2, in order to create a Server Core VM.
 
-- The RRAS/NAT role, GUI configuration, and flat-text user provisioning are Phase 1 artifacts only. JSON schema design and Server Core deployment replace them in Phase 2.
+- The RRAS/NAT role, GUI configuration, and flat-text user provisioning are Stage 1 artifacts only. JSON schema design and Server Core deployment replace them in Stage 2.
 - The basic Powershell script is saved as an artifact to automate future DC promotion.
 
 
 ## References
 
 - [Josh Madakor's AD HomeLab:](https://www.youtube.com/watch?v=MHsI8hJmggI) foundational lab structure and initial PowerShell User Provisioning Script.
-- [John Hammond's Active Directory Series:](https://www.youtube.com/watch?v=pKtDQtsubio&list=PL1H1sBF1VAKVoU6Q2u7BBGPsnkn-rajlp) JSON provisioning schema, and Server Core methodology for Phase 2.
+- [John Hammond's Active Directory Series:](https://www.youtube.com/watch?v=pKtDQtsubio&list=PL1H1sBF1VAKVoU6Q2u7BBGPsnkn-rajlp) JSON provisioning schema, and Server Core methodology for Stage 2.
 
 ### Next Steps
-- [ ] **Pending:** Design JSON user provisioning schema for Phase 2.
-- [ ] **Pending:** Deploy Phase 2 Server Core DC via Terraform.
-- [x] **Completed:** Phase 1 Sandbox Built, client joined, provisioning script tested. (2026-05-08)
+- [ ] **Pending:** Design JSON user provisioning schema for Stage 2.
+- [ ] **Pending:** Deploy Stage 2 Server Core DC via Terraform.
+- [x] **Completed:** Stage 1 Sandbox Built, client joined, provisioning script tested. (2026-05-08)
 - [x] **Completed:** Created QEMU Snapshot of pre-join AD Client. (2026-05-08)
-- [x] **Completed:** Publish Updated Roadmap reflecting Phase 1 completion and Phase 5 restructure. (2026-05-09)
+- [x] **Completed:** Publish Updated Roadmap reflecting Stage 1 completion and Stage 5 restructure. (2026-05-09)

@@ -284,12 +284,12 @@ Note on NOTRUST group testing: WAN access and inter-VLAN blocking were validated
 
 
 ### Next Steps
-- [x] **Completed:** Synchronize all OpenWRT configurations and create wireless networks for new TV VLAN
-- [x] **Completed:** Back up all OpenWRT Configurations
-- [x] **Completed:** Deploy OPNsense VM Configuration in physical device -- 2026/03/31
-- [x] **Deprecated:** Configure Lenovo M920q to spoof MAC address of original Mesh node to avoid blackouts -- 2026/03/31
-- [x] **Completed:** Test configuration -- 2026/03/31
-- [x] **Completed** Outline a maintenance window to deploy implementation into production -- 2026/03/31
-- [ ] **Pending:** Configure centralized logging using syslog, for grafana/loki/alloy running on server
-- [x] **Completed:** Created a Minimum Viable Product OPNsense configuration, as baseline for deployment in hardware.
-- [ ] **Pending architectural consideration:** MESH\_IOT is currently a member of the NOTRUST group, which permits WAN access. Once fully local IOT management is deployed, MESH\_IOT will need to be broken out of NOTRUST into a dedicated no-WAN group — at which point the group rule will need to be split and the firewall alias updated accordingly.
+- [x] **Completed:** Synchronize all OpenWRT configurations and create wireless networks for new TV VLAN. (2026-03-31)
+- [x] **Completed:** Back up all OpenWRT Configurations. (2026-03-31)
+- [x] **Completed:** Deploy OPNsense VM Configuration in physical device. (2026-03-31)
+- [x] **Deprecated:** Configure Lenovo M920q to spoof MAC address of original Mesh node to avoid blackouts. (2026-03-31)
+- [x] **Completed:** Test configuration. (2026-03-31)
+- [x] **Completed** Outline a maintenance window to deploy implementation into production. (2026-03-31)
+- [x] **Completed:** Configure centralized logging using syslog, for grafana/loki/alloy running on server. (2026-04-04)
+- [x] **Completed:** Created a Minimum Viable Product OPNsense configuration, as baseline for deployment in hardware. (2026-03-31)
+- [ ] **Pending architectural consideration:** MESH\_IOT is currently a member of the NOTRUST group, which permits WAN access. Once fully local IOT management is deployed, MESH\_IOT will need to be broken out of NOTRUST into a dedicated no-WAN group, at which point the group rule will need to be split and the firewall alias updated accordingly.

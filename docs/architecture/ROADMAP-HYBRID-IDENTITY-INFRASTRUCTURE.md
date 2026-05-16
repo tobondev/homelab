@@ -1,8 +1,8 @@
-# Roadmap:: Active Directory & Hybrid Identity Engineering
-> **Status:** In Progress — Phase 1 Complete, Phase 2 Planning
-> **Note:** This document outlines a planned engineering initiative to extend the infrastructure detailed in `CURRENT-STATE.md`. It functions as a living project plan and will be iteratively updated, and eventually superseded by formalized Architectural Decision Records (ADRs) and Runbooks as deployment phases are completed.
- **Owner:** @tobondev
- **Updated:** 2026-05-08
+# Roadmap: Active Directory & Hybrid Identity Engineering
+**Status:** In Progress — Stage 1 Complete, Stage 2 Planning
+**Note:** This document outlines a planned engineering initiative to extend the infrastructure detailed in `CURRENT-STATE.md`. It functions as a living project plan and will be iteratively updated, and eventually superseded by formalized Architectural Decision Records (ADRs) and Runbooks as deployment stages are completed.
+**Owner:** @tobondev
+**Updated:** 2026-05-08
 
 ---
 
@@ -10,48 +10,48 @@
 
 The Hybrid Identity Architecture Project has the goal of developing hands-on experience in a Mixed-OS environment, by using `Windows Server`, `Active Directory`, `Kerberos`, `SSSD`, to deploy an environment to test and manage Identity and Access Management at scale. Rather than replicating a Windows-native setup in isolation, this architectural project will be integrated with the existing `OPNsense` network infrastructure, by separating `DNS` control inside of a `AD` `VLAN`, which will enable cross-OS authentication, while maintaining DHCP server duties inside `OPNsense`.
 
-The project is structured in five phases. Phases 1 and 2 reflect a deliberate two-stage deployment strategy driven by a real infrastructure constraint: the Windows Server Evaluation license expires after 180 days. Rather than treating this as a limitation, the architecture treats it as a forcing function: Phase 1 is ephemeral by design, and Phase 2 automates the rebuild path via Terraform so the domain can be reconstructed from code on demand. An environment that can be destroyed and rebuilt in minutes doesn't have a licensing problem. It has a deployment pipeline.
+The project is structured in five stages. Stages 1 and 2 reflect a deliberate two-stage deployment strategy driven by a real infrastructure constraint: the Windows Server Evaluation license expires after 180 days. Rather than treating this as a limitation, the architecture treats it as a forcing function: Stage 1 is ephemeral by design, and Stage 2 automates the rebuild path via Terraform so the domain can be reconstructed from code on demand. An environment that can be destroyed and rebuilt in minutes doesn't have a licensing problem. It has a deployment pipeline.
 
-This document is a living project plan. It defines scope, phases, expected artifacts, and a consolidated offensive/defensive testing phase. It will be updated as phases complete and eventually superseded by the ADRs, runbooks, and incident reports it references.
+This document is a living project plan. It defines scope, stages, expected artifacts, and a consolidated offensive/defensive testing Stage. It will be updated as stages complete and eventually superseded by the ADRs, runbooks, and incident reports it references.
 
 ---
 
 ## Architecture Constraints & Design Decisions
 
-Two constraints shape the overall approach and are worth stating explicitly before any phase begins.
+Two constraints shape the overall approach and are worth stating explicitly before any Stage begins.
 
-**The 180-day licensing boundary.** Windows Server Evaluation licenses expire. A domain controller running on a long-lived evaluation VM will accumulate manual state that cannot be cleanly reproduced when the license expires. The two-phase approach, disposable sandbox first, code-defined production second, addresses this directly. Infrastructure defined as code can be rebuilt from scratch without carrying forward manual configuration debt.
+**The 180-day licensing boundary.** Windows Server Evaluation licenses expire. A domain controller running on a long-lived evaluation VM will accumulate manual state that cannot be cleanly reproduced when the license expires. The two-Stage approach, disposable sandbox first, code-defined production second, addresses this directly. Infrastructure defined as code can be rebuilt from scratch without carrying forward manual configuration debt.
 
 **L3 stays on OPNsense.** The Windows Server will not run `RRAS` or `DHCP`. Routing and address management remain centralized on OPNsense, consistent with the decision documented in ADR-001. The `Domain Controller` is a `DNS` server and an identity provider, not a network appliance. Keeping it scoped to that role contains the blast radius of any DC failure to identity services only and preserves the existing Layer 3 governance model.
 
 ---
 
-## Phase 1: Isolated GUI Sandbox
+## Stage 1: Isolated GUI Sandbox
 
 **Goal:** Understand the Windows Server operational model through direct, GUI-driven interaction with no exposure to the primary network. Develop and validate a foundational PowerShell user provisioning capability.
-**Status:** Complete
+**Status:** Complete. (2025-05-08)
 
 ### Architecture
 
-Fully isolated QEMU/KVM virtual network (`AD-Sandbox-LAN`) with no routing path to the primary network. Manual deployment of Windows Server 2025 and a Windows 11 client. In this phase, the server runs the full Windows-native stack: `RRAS/NAT`, `DHCP`, `DNS`, and `AD DS`. This is intentional: Phase 1 is about understanding how the ecosystem works before dismantling parts of it.
+Fully isolated QEMU/KVM virtual network (`AD-Sandbox-LAN`) with no routing path to the primary network. Manual deployment of Windows Server 2025 and a Windows 11 client. In this Stage, the server runs the full Windows-native stack: `RRAS/NAT`, `DHCP`, `DNS`, and `AD DS`. This is intentional: Stage 1 is about understanding how the ecosystem works before dismantling parts of it.
 
 ### Objectives
 
 - Promote a Domain Controller, configure Active Directory-integrated DNS zones, and join a client to the domain using the GUI toolchain.
-- Deploy and validate a simple PowerShell user provisioning script that reads a plaintext username list and creates domain users with a uniform password. This script establishes the baseline automation pattern that will be extended in Phase 2 with a JSON schema.
-- Build a QEMU internal snapshot of the pre-joined client to serve as a rapidly deployable baseline for future phases.
+- Deploy and validate a simple PowerShell user provisioning script that reads a plaintext username list and creates domain users with a uniform password. This script establishes the baseline automation pattern that will be extended in Stage 2 with a JSON schema.
+- Build a QEMU internal snapshot of the pre-joined client to serve as a rapidly deployable baseline for future stages.
 - Document the complete build process in a timestamped operations log.
 
 ### Lifecycle
 
-This environment is ephemeral. The VMs are rebuilt from scratch, the provisioning script is executed against the clean domain, and the client is snapshotted in its pre-joined state. At the end of the phase, only the operations log, the provisioning script, and the snapshot remain.
+This environment is ephemeral. The VMs are rebuilt from scratch, the provisioning script is executed against the clean domain, and the client is snapshotted in its pre-joined state. At the end of the Stage, only the operations log, the provisioning script, and the snapshot remain.
 
 ---
 
-## Phase 2: Production Integration
+## Stage 2: Production Integration
 
 **Goal:** Deploy Active Directory as a code-defined, observable service integrated with the existing production infrastructure, using enterprise-standard Server Core and a declarative JSON provisioning schema.
-**Status:** Planned
+**Status:** In Progress (2025-05-11)
 
 ### Architecture
 
@@ -61,11 +61,11 @@ Windows VMs are attached to a dedicated `VLAN` bridge managed by OPNsense. `RRAS
 
 ### Server Core & PowerShell Remoting
 
-The Domain Controller is deployed as Windows Server Core — the enterprise-standard reduced-attack-surface installation option. Management and provisioning are performed entirely via PowerShell Remoting and `sconfig`. This enforces the CLI discipline introduced conceptually through Phase 1's GUI comprehension.
+The Domain Controller is deployed as Windows Server Core — the enterprise-standard reduced-attack-surface installation option. Management and provisioning are performed entirely via PowerShell Remoting and `sconfig`. This enforces the CLI discipline introduced conceptually through Stage 1's GUI comprehension.
 
 ### JSON User Provisioning Schema
 
-The Phase 1 plaintext provisioning script is replaced with a declarative JSON schema that defines users, passwords, group memberships, and attribute sets in a single source of truth. This schema is designed to be extensible: when the environment expands in later phases to include Kerberoastable service accounts and intentionally misconfigured ACLs, the same JSON document is the single declarative source of the entire lab's user state. The format also aligns with LogQL queries in Loki and Grafana dashboard provisioning, reinforcing the observability pipeline.
+The Stage 1 plaintext provisioning script is replaced with a declarative JSON schema that defines users, passwords, group memberships, and attribute sets in a single source of truth. This schema is designed to be extensible: when the environment expands in later stages to include Kerberoastable service accounts and intentionally misconfigured ACLs, the same JSON document is the single declarative source of the entire lab's user state. The format also aligns with LogQL queries in Loki and Grafana dashboard provisioning, reinforcing the observability pipeline.
 
 ### Automated Deployment
 
@@ -77,7 +77,7 @@ The `dmacvicar/libvirt` Terraform provider provisions the Windows Server and cli
 
 ---
 
-## Phase 3: Cloud Bridge
+## Stage 3: Cloud Bridge
 
 **Goal:** Synchronize the on-premise domain with a Microsoft 365 cloud tenant to establish and document a hybrid identity architecture.
 **Status:** Planned
@@ -94,7 +94,7 @@ Integration of the local AD domain with a Microsoft 365 Business Premium 30-day 
 
 ---
 
-## Phase 4: Cross-OS Domain Integration
+## Stage 4: Cross-OS Domain Integration
 
 **Goal:** Enforce centralized identity across operating systems by joining a `RHEL` endpoint to the Windows domain.
 **Status:** Planned
@@ -108,7 +108,7 @@ A `RHEL` VM is deployed alongside the Windows client on the HybridAD `VLAN`. The
 - `krb5` handles `Kerberos` ticket operations
 - `PAM` enforces session control and access policy at login
 
-Each layer has its own log surface, and each is exercised by the fault injection scenarios defined in Phase 5.
+Each layer has its own log surface, and each is exercised by the fault injection scenarios defined in Stage 5.
 
 ### Objectives
 
@@ -119,14 +119,14 @@ Each layer has its own log surface, and each is exercised by the fault injection
 
 ---
 
-## Phase 5: Offensive Security & Defensive Analysis
+## Stage 5: Offensive Security & Defensive Analysis
 
 **Goal:** Expose the Active Directory environment to deliberate attack techniques and document the defensive telemetry each one generates.
 **Status:** Planned
 
 ### Architecture
 
-Using the JSON-defined lab state from Phase 2, the environment is populated with users and configurations that create realistic attack paths (Kerberoastable service accounts, excessive ACL permissions, etc.). Offensive tools are run from a dedicated attack host, while the Windows Server's event logs are streamed into Loki and analyzed in Grafana. A repeatable QEMU snapshot restore path ensures the domain can be returned to a known-clean state between exercises.
+Using the JSON-defined lab state from Stage 2, the environment is populated with users and configurations that create realistic attack paths (Kerberoastable service accounts, excessive ACL permissions, etc.). Offensive tools are run from a dedicated attack host, while the Windows Server's event logs are streamed into Loki and analyzed in Grafana. A repeatable QEMU snapshot restore path ensures the domain can be returned to a known-clean state between exercises.
 
 ### Objectives
 
@@ -147,10 +147,10 @@ All engineered failure scenarios are executed here within a fully instrumented e
 
 ## Artifact Index
 
-| Artifact Type | Phase | Status |
+| Artifact Type | Stage | Status |
 |--------------|-------|--------|
 | PowerShell User Provisioning Suite (MVP) | 1 → 2 | Complete |
-| Operations Log — Phase 1 Build & Snapshot | 1 | In Progress |
+| Operations Log — Stage 1 Build & Snapshot | 1 | In Progress |
 | ADR: L3 Routing Governance — Windows RRAS vs. OPNsense | 2 | Planned |
 | ADR: Ephemeral Windows Infrastructure via Terraform | 2 | Planned |
 | JSON User Provisioning Schema & Script | 2 | Planned |
