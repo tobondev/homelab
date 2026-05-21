@@ -10,7 +10,7 @@
 
 The Hybrid Identity Architecture Project has the goal of developing hands-on experience in a Mixed-OS environment, by using `Windows Server`, `Active Directory`, `Kerberos`, `SSSD`, to deploy an environment to test and manage Identity and Access Management at scale. Rather than replicating a Windows-native setup in isolation, this architectural project will be integrated with the existing `OPNsense` network infrastructure, by separating `DNS` control inside of a `AD` `VLAN`, which will enable cross-OS authentication, while maintaining DHCP server duties inside `OPNsense`.
 
-The project is structured in five stages. Stages 1 and 2 reflect a deliberate two-stage deployment strategy driven by a real infrastructure constraint: the Windows Server Evaluation license expires after 180 days. Rather than treating this as a limitation, the architecture treats it as a forcing function: Stage 1 is ephemeral by design, and Stage 2 automates the rebuild path via Terraform so the domain can be reconstructed from code on demand. An environment that can be destroyed and rebuilt in minutes doesn't have a licensing problem. It has a deployment pipeline.
+The project is structured in five stages. Stages 1 and 2 reflect a deliberate two-stage deployment strategy driven by a real infrastructure constraint: the Windows Server Evaluation license expires after 180 days. Rather than treating this as a limitation, the architecture treats it as a forcing function: Stage 1 is ephemeral by design, and it focuses on building foundational knowledge of Active Directory Domain Services using the GUI. Stage 2 focuses on taking that knowledge and building a scripted deplyment of ADDS, using Server Core as the Domain Controller, instead.
 
 This document is a living project plan. It defines scope, stages, expected artifacts, and a consolidated offensive/defensive testing Stage. It will be updated as stages complete and eventually superseded by the ADRs, runbooks, and incident reports it references.
 
@@ -20,7 +20,7 @@ This document is a living project plan. It defines scope, stages, expected artif
 
 Two constraints shape the overall approach and are worth stating explicitly before any Stage begins.
 
-**The 180-day licensing boundary.** Windows Server Evaluation licenses expire. A domain controller running on a long-lived evaluation VM will accumulate manual state that cannot be cleanly reproduced when the license expires. The two-Stage approach, disposable sandbox first, code-defined production second, addresses this directly. Infrastructure defined as code can be rebuilt from scratch without carrying forward manual configuration debt.
+**The 180-day licensing boundary.** Windows Server Evaluation licenses expire. A domain controller running on a long-lived evaluation VM will accumulate manual state that cannot be cleanly reproduced when the license expires. This is understood and accepted. Any configuration that needs to be documented will live under the repository structure. There exists no long-term plan to deploy Active Directory Services full-time in the Home-Lab.
 
 **L3 stays on OPNsense.** The Windows Server will not run `RRAS` or `DHCP`. Routing and address management remain centralized on OPNsense, consistent with the decision documented in ADR-001. The `Domain Controller` is a `DNS` server and an identity provider, not a network appliance. Keeping it scoped to that role contains the blast radius of any DC failure to identity services only and preserves the existing Layer 3 governance model.
 
@@ -67,9 +67,9 @@ The Domain Controller is deployed as Windows Server Core — the enterprise-stan
 
 The Stage 1 plaintext provisioning script is replaced with a declarative JSON schema that defines users, passwords, group memberships, and attribute sets in a single source of truth. This schema is designed to be extensible: when the environment expands in later stages to include Kerberoastable service accounts and intentionally misconfigured ACLs, the same JSON document is the single declarative source of the entire lab's user state. The format also aligns with LogQL queries in Loki and Grafana dashboard provisioning, reinforcing the observability pipeline.
 
-### Automated Deployment
+### Automated Deployment --- Updated --- (2026-05-20)
 
-The `dmacvicar/libvirt` Terraform provider provisions the Windows Server and client instances declaratively against the existing `QEMU/KVM` host. This directly addresses the 180-day evaluation constraint: the domain is code, not a running VM, and can be rebuilt on demand without manual intervention. It also enforces the same infrastructure discipline applied to every other infrastructure project: documented, automated, reproducible.
+The original scope for Stage 2 included leveraging the constraints of the 180-day evaluation period, utilizing Terraform to automate the deployment of an Active Directory Domain from code. During Stage 2, Terraform was removed from the scope of the project entirely. Troubleshooting Windows Server automated deployment in 
 
 ### Observability
 
@@ -152,7 +152,6 @@ All engineered failure scenarios are executed here within a fully instrumented e
 | PowerShell User Provisioning Suite (MVP) | 1 → 2 | Complete |
 | Operations Log — Stage 1 Build & Snapshot | 1 | In Progress |
 | ADR: L3 Routing Governance — Windows RRAS vs. OPNsense | 2 | Planned |
-| ADR: Ephemeral Windows Infrastructure via Terraform | 2 | Planned |
 | JSON User Provisioning Schema & Script | 2 | Planned |
 | Grafana Dashboard — Windows Security Events & Suricata | 2 | Planned |
 | Runbook: Entra ID Connect | 3 | Planned |

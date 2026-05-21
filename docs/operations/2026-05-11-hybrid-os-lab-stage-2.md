@@ -10,7 +10,7 @@
 ## 1. Context & Problem Statement
 
 
-**One-line summary:** Stage 2 of the Hybrid Identity Architecture Project consists of automating deployment of Active Directory Domain Services (ADDS) using Terraform, and integrating the network into production via a dedicated VLAN in OPNsense.
+**One-line summary:** Stage 2 of the Hybrid Identity Architecture Project consists of integrating the network into production via a dedicated VLAN in OPNsense, and upgrading the user provisioning script.
 
 **Background:** Following the completion of Stage 1, the goal of this stage is to take the foundational knowledge gained, including a basic PowerShell ADDS provisioning script, and use it to automate the deployment of an Active Directory Domain Controller running Windows Server Core. Stage 2 integrates the AD Domain Service to the production network, by defining an AD-VLAN, and keeping DHCP duties to OPNsense, while allowing the AD DC to handle DNS *within* the AD-VLAN (with OPNsense acting as the Upstream DNS for ADDS).
 
@@ -18,14 +18,16 @@
 ## 2. Architectural Decisions & Strategy
 
 
-Automating deployment requires understanding deployment. As such, additional testing was determined necessary before introducing Terraform. This testing proved extremely relevant, since it exposed the difficulties of using Windows' `autounattend.xml` system. The following architectural decisions are made in light of Stage 1 findings in conjunction with additional testing, found below:
+**Deprecated and Superseded:** Automating deployment requires understanding deployment. As such, additional testing was determined necessary before introducing Terraform. This testing proved extremely relevant, since it exposed the difficulties of using Windows' `autounattend.xml` system. The following architectural decisions were made based on Stage 1 findings, and amendments were added to those superseded or deprecated during the course of Stage 2.
 
 
 ### Decision 1: Standardize Deployment via 'Golden Image'.
 
-**Decision:** Define a 'Golden Image' via QEMU snapshotting, which will form the basis of future Terraform deployments, rather than relying on Windows's `autounattend.xml` pipeline.
+**Decision:** Define a 'Golden Image' via QEMU snapshotting, which will form the basis of future Terraform deployments, rather than relying on Windows's `autounattend.xml` pipeline. [PARTIALLY-SUPERSEDED] (2026-05-20)
 
 **Rationale:** Pre-automation deployment testing revealed a series of issues when dealing with Windows' default unattended installation system. Microsoft's use of `UDF` as an `ISO` filesystem makes editing the installation media (to inject `autounattend.xml`) unreasonably complex. Attempts at creating a floppy disk, virtual CD-ROM and USB to deliver the XML script all failed, likely because of QEMU's approach to UEFI systems (no native floppy support). A USB drive passed through to the VM successfully started the unattended installation process but failed to complete it. Debugging and troubleshooting the XML workflow was time-consuming, and unsuccessful. The decision was made to abandon the XML pipeline and focus on a 'Golden Image' as a base system from which to clone all deployments. See Phase 1 for detailed troubleshooting information.
+
+*Modification:*  Terraform is removed from Project scope. The decision to standardize remains, albeit modified: the minimum viable configuration for the Windows Server VM is still snapshotted and treated as the baseline for future deployments. See `DECISION 8`.
 
 ### Decision 2: Provide a separate NIC to the AD-VLAN, and use MacVTap to bridge multiple clients to a single interface. 
 
@@ -49,11 +51,14 @@ While there are inherent performance constraints in using B.A.T.M.A.N. Advanced 
 **Rationale:** While the resources required to virtualize the Hybrid OS Lab are fairly large, the current Server workload is light enough to handle a Server Core instance and 1-2 Windows clients. The Workstation provides overflow capacity if required. Decision 2 guarantees seamless VLAN connectivity for both hosts by simply provisioning an additional NIC to the Workstation.
 
 
-### Decision 4: Delay Mitigation for Layer 2 Spoofing Attacks
+### Decision 4: Delay Mitigation for Layer 2 Spoofing Attacks [PARTIALLY-SUPERSEDED] (2026-05-20).
 
-**Decision:** Accept the risk of Domain Controller impersonation via ARP Cache Poisoning/ARP Spoofing within Stage 2. 
+**Decision:** Accept the risk of Domain Controller impersonation via ARP Cache Poisoning/ARP Spoofing during the entire project. This attack surface is left open for Stage 5. 
 
-**Rationale:** Stage 2 deals exclusively with automated provisioning and Infrastructure as Code. Mitigating a DC Impersonation vulnerability requires either implementing 802.1X authentication, LDAP signing/Channel Binding or SMB signing, all of which fall outside the designated Stage objectives. Considering the limited attack surface (intra-network), paired with the limited scope (separated VLAN) and the ephemeral nature of the deployment, this is deemed an acceptable risk for Stage 2, provided one compensating control: since Stage 2 covers the destruction and recreation of the Active Directory domain, destruction is mandated as the final step of Stage 2. The domain will be recreated from code for Stage 3.
+**Rationale:** Rationale: Mitigating DC impersonation via ARP spoofing requires implementing 802.1X authentication, LDAP signing/Channel Binding, or SMB signing, none of which fall within the objectives of Stages 2, 3, or 4.
+The original compensating control (mandating the destruction of the domain at the end of Phase 2) is no longer applicable. However, the risk profile of the environment remains limited: `MESH_AD` is an isolated VLAN containing only virtual hosts under single-operator control. There is no production data, no credential reuse, and no lateral movement path to the primary network. A successful spoofing attack within this environment has no impact on the infrastructure.
+
+The vulnerability is therefore preserved intentionally. Stage 5 is structured around realistic Active Directory attack paths and their corresponding defensive telemetry. ARP spoofing and DC impersonation are real-world attack vectors that generate specific, detectable artifacts in Windows Security Event logs and Suricata, regardless of success. Priority is given to preserving a viable attack surface for Stage 5. See `docs/architecture/ROADMAP-HYBRID-IDENTITY-INFRASTRUCTURE.md`.
 
 
 ### Decision 5: Define new Firewall Group `ISOLATED_INFRA`
@@ -68,21 +73,28 @@ While there are inherent performance constraints in using B.A.T.M.A.N. Advanced 
 
 **Rationale:** Given both the successful MVP test carrying the new VLAN tag over the mesh to the Workstation, and the failure of the batman-adv server node to act as a VLAN access port for its own LAN interface, the decision is made to move the lab to the Workstation. Priority is given to continued development. Infrastructure as Code means the lab can be migrated back to the Main Server if an alternative VLAN provisioning path is identified. That investigation falls outside the scope of Stage 2.
 
-## Decision 7: Use MAC-Based DHCP Reservations for Predictable VM IP Assignment
+## Decision 7: Use MAC-Based DHCP Reservations for Predictable VM IP Assignment 
 
-**Decision:** Assign static MAC addresses to Terraform-managed QEMU VMs and configure corresponding DHCP reservations in OPNsense, rather than baking static IPs into the Golden Image.
+**Decision:** Assign static MAC addresses to ~~Terraform-managed~~ QEMU VMs and configure corresponding DHCP reservations in OPNsense, rather than baking static IPs into the Golden Image. [Partially Deprecated] (2026-05-20).
 
-**Rationale:** A static IP embedded in the Golden Image would be inherited by every clone, producing address conflicts from the first Terraform deployment. DHCP with reservations solves this cleanly: QEMU allows MAC addresses to be manually declared in VM definitions, and OPNsense maps those MACs to fixed leases. Each cloned VM receives a predictable, unique IP without the Golden Image carrying any host-specific configuration. This also keeps the Golden Image genuinely generic — it can be cloned for future roles beyond the DC without modification. Given the current Stage 2 scope of a single Domain Controller, there is no risk of DHCP collision.
+**Rationale:** ~~A static IP embedded in the Golden Image would be inherited by every clone, producing address conflicts from the first Terraform deployment.~~ The DC requires a static IP in order to act as the DNS server for the AD Domain. DHCP with reservations solves this cleanly: QEMU allows MAC addresses to be manually declared in VM definitions, and OPNsense maps those MACs to fixed leases. Each cloned VM receives a predictable, unique IP without the Golden Image carrying any host-specific configuration. This also keeps the Golden Image genuinely generic — it can be cloned for future roles beyond the DC without modification. Given the current Stage 2 scope of a single Domain Controller, there is no risk of DHCP collision
 
+*Modification:*  Terraform is removed from Project scope. The decision to employ static lease assignment remains. The logic is far simpler: it is necessary in order to assign DNS services to the DC. There are no risks of collisions. See `DECISION 8` and `DECISION 1`.
+
+## Decision 8: Terraform integration is declared out of project scope.
+
+**Decision:** The original Roadmap proposed Terraform as a tool to facilitate automated deployment of the AD Domain. While it would solve the problem, it inflates the scope of the project. 
+
+**Rationale:** The original inclusion of Terraform in the project was intended to solve two problems: speed-up the deployment of the Active Directory Domain, and act as a real-world case-study on Terraform automation. It fails on both accounts. Automating is the right idea, but Terraform is the wrong tool. QEMU/KVM VM Cloning, alongside PowerShell, Bash and Ansible are more realistic tools for this purpose. Terraform, while an interesting technology, and a future project, belongs in the cloud: it is there where it can actually save time deploying at scale. See `DECISION 7` and `DECISION 1` for ramifications.
 
 ## 3. Implementation & Execution
 
 * **Phase 1 (Preparation):** Pre-Deployment Research & Network Segmentation:
 
 
-**Pre-Stage Testing: Unattended Installation with `autounattend.xml`**
+**Pre-Stage Testing: Unattended Installation with `autounattend.xml`** [PARTIALLY-SUPERSEDED] --- See `DECISION 8` and `DECISION 1`. (2026-05-20)
 
-Before proceeding to network configuration, a viable automated installation path was investigated. The goal was to have Windows Server install and configure itself unattended, without manual interaction, as the basis for future Terraform-based deployments.
+Before proceeding to network configuration, a viable automated installation path was investigated. The goal was to have Windows Server install and configure itself unattended, without manual interaction, as the basis for future Terraform-based deployments. 
 
 A 50MB virtual USB image was created, partitioned, formatted, and populated with `autounattend.xml`:
 
@@ -203,7 +215,7 @@ The two factors that distinguish the server node from every other mesh node are:
 
 *Why this was not caught earlier:* The server node's physical LAN port had never been used after initial deployment. Until this incident, the node had exclusively bridged VLAN traffic between the batman-adv mesh and the wireless interface.
 
-*Resolution:* The batman-adv server node's LAN port is abandoned as a VLAN access port. Further root cause investigation is deferred indefinitely. The lab is moved to the Workstation per AD-6. This decision modifies `DECISION 2` and supersedes `DECISION 3`.
+*Resolution:* The batman-adv server node's LAN port is abandoned as a VLAN access port. Further root cause investigation is deferred indefinitely. The lab is moved to the Workstation per `DECISION 6`. This decision modifies `DECISION 2` and supersedes `DECISION 3`.
 
 **Workstation MacVTap Validation (`testbench`):**
 
@@ -223,7 +235,7 @@ MacVTap on the Workstation via the client node operates correctly across all tes
 
 ---
 
-**DC001 | Golden Image Build:**
+**DC001 | Golden Image Build:** [PARTIALLY-SUPERSEDED] --- See `DECISION 8` and `DECISION 1`. (2026-05-20)
 
 [IN PROGRESS]
 
@@ -235,7 +247,7 @@ $List[0].InputMethodTips.Clear()
 $List[0].InputMethodTips.Add('0409:00010409')
 Set-WinUserLanguageList $List -Force
 ```
-
+#### [SUPERSEDED]
 WinRM was configured to accept remote connections from Terraform's provisioner:
 
 ```powershell
@@ -263,10 +275,20 @@ Listener
 
 A QEMU internal snapshot was taken at this point. The VM was then shut down cleanly. The resulting qcow2 disk image — with Server Core installed, WinRM configured, and no host-specific state beyond the computer name — is the Golden Image that Terraform will clone for all subsequent deployments.
 
-IP assignment for Terraform-cloned VMs is handled via MAC-based DHCP reservations per `DECISION 7`.
+~~IP assignment for Terraform-cloned VMs is handled via MAC-based DHCP reservations per `DECISION 7`.~~
+### /[SUPERSEDED]
 
+Since Terraform is no longer part of the scope, WinRM is disabled until otherwise called for.
 
-### Phase 3 (Verification): Terraform Deployment & Rebuild Validation
+```powershell
+Stop-Service WinRM
+Set-Service WinRM -StartupType Disabled
+```
+
+This state supersedes the previous snapshot. While snapshots are no longer necessary for cloning, it is still a relevant practice, given that the DC now persists through all remaining stages. These snapshots will serve as restore points at known-good configuration boundaries, rather than provisioning templates.
+
+### Phase 3 (Verification): 
+
 
 [PENDING]
 
@@ -277,10 +299,16 @@ IP assignment for Terraform-cloned VMs is handled via MAC-based DHCP reservation
 [PENDING]
 
 ### Next Steps
-- [ ] **Pending:** Write Terraform libvirt configuration for DC001 clone and WinRM provisioner.
-- [ ] **Pending:** Execute `terraform apply` and validate DC promotion via PowerShell remoting.
-- [ ] **Pending:** Execute `terraform destroy` and rebuild — proof of concept for ephemeral infrastructure.
+
+
+- [ ] **Pending:** Develop and deploy JSON Provisioning Schema
+- [x] **Completed:** DHCP reservation for DC001 in OPNsense
+- [ ] **Pending:** Post-Promotion Snapshot after WinRM disabling.
 - [ ] **Pending:** Complete Section 4.
+- [ ] **Pending:** Grafana Alloy configuration and deployment on DC.
+- [ ] **Pending:** Windows Event Log Forwarding pipeline (Alloy->Loki->Grafana)
 - [x] **Completed:** MESH_AD VLAN deployed, validated, and migrated to `ISOLATED_INFRA` group. (2026-05-11)
-- [x] **Completed:** MacVTap architecture validated on Workstation. (2026-05-11)
+- [x] **Completed:** MacVTap architecture validated on Workstation. (2026-05-11) [PARTIALLY-SUPERSEDED] (2026-05-20)
+- [ ] **Pending:** Post-Promotion Snapshot after WinRM disabling.
 - [x] **Completed:** `DC001` Golden Image built and snapshotted. (2026-05-11)
+Grafana dashboard for Windows Security Events and Suricata in same observability plane (Stage 5, if at all)
