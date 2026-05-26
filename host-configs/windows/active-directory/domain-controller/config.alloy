@@ -1,0 +1,30 @@
+// ── Loki destination ──────────────────────────────────────────
+loki.write "default" {
+  endpoint {
+    url = "http://{LOKI-HOST}:(LokiPort)/loki/api/v1/push"
+  }
+}
+
+// ── Security Event Log ────────────────────────────────────────
+loki.source.windowsevent "security" {
+  eventlog_name = "Security"
+  forward_to    = [loki.write.default.receiver]
+
+  labels = {
+    job     = "windows_eventlog",
+    host    = "DC001",
+    channel = "security",
+  }
+}
+
+// ── System Event Log ──────────────────────────────────────────
+loki.source.windowsevent "system" {
+  eventlog_name = "System"
+  forward_to    = [loki.write.default.receiver]
+
+  labels = {
+    job     = "windows_eventlog",
+    host    = "DC001",
+    channel = "system",
+  }
+}

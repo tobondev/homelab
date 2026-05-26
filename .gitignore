@@ -8,3 +8,5 @@ docs/logs/*.timing
 # Filter against the Ansible keys
 host-configs/ansible/playbooks/openwrt/keys/*
 docker/observability/grafanaloki/alloy/GeoLite2-City.mmdb
+# Filter current commit draft.
+.current-commit.draft

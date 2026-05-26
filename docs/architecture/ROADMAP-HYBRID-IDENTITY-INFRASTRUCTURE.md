@@ -1,8 +1,8 @@
 # Roadmap: Active Directory & Hybrid Identity Engineering
-**Status:** In Progress — Stage 1 Complete, Stage 2 Planning
+**Status:** In Progress — Stage 2 Complete, Stage 3 Planning
 **Note:** This document outlines a planned engineering initiative to extend the infrastructure detailed in `CURRENT-STATE.md`. It functions as a living project plan and will be iteratively updated, and eventually superseded by formalized Architectural Decision Records (ADRs) and Runbooks as deployment stages are completed.
 **Owner:** @tobondev
-**Updated:** 2026-05-08
+**Updated:** 2026-05-26
 
 ---
 
@@ -10,7 +10,7 @@
 
 The Hybrid Identity Architecture Project has the goal of developing hands-on experience in a Mixed-OS environment, by using `Windows Server`, `Active Directory`, `Kerberos`, `SSSD`, to deploy an environment to test and manage Identity and Access Management at scale. Rather than replicating a Windows-native setup in isolation, this architectural project will be integrated with the existing `OPNsense` network infrastructure, by separating `DNS` control inside of a `AD` `VLAN`, which will enable cross-OS authentication, while maintaining DHCP server duties inside `OPNsense`.
 
-The project is structured in five stages. Stages 1 and 2 reflect a deliberate two-stage deployment strategy driven by a real infrastructure constraint: the Windows Server Evaluation license expires after 180 days. Rather than treating this as a limitation, the architecture treats it as a forcing function: Stage 1 is ephemeral by design, and it focuses on building foundational knowledge of Active Directory Domain Services using the GUI. Stage 2 focuses on taking that knowledge and building a scripted deplyment of ADDS, using Server Core as the Domain Controller, instead.
+The project is structured in five stages. Stages 1 and 2 reflect a deliberate two-stage deployment strategy driven by a real infrastructure constraint: the Windows Server Evaluation license expires after 180 days. Rather than treating this as a limitation, the architecture treats it as a forcing function: Stage 1 is ephemeral by design, and it focuses on building foundational knowledge of Active Directory Domain Services using the GUI. Stage 2 focuses on taking that knowledge and building a scripted deployment of ADDS, using Server Core as the Domain Controller, instead.
 
 This document is a living project plan. It defines scope, stages, expected artifacts, and a consolidated offensive/defensive testing Stage. It will be updated as stages complete and eventually superseded by the ADRs, runbooks, and incident reports it references.
 
@@ -29,7 +29,7 @@ Two constraints shape the overall approach and are worth stating explicitly befo
 ## Stage 1: Isolated GUI Sandbox
 
 **Goal:** Understand the Windows Server operational model through direct, GUI-driven interaction with no exposure to the primary network. Develop and validate a foundational PowerShell user provisioning capability.
-**Status:** Complete. (2025-05-08)
+**Status:** Completed. (2026-05-08)
 
 ### Architecture
 
@@ -51,13 +51,13 @@ This environment is ephemeral. The VMs are rebuilt from scratch, the provisionin
 ## Stage 2: Production Integration
 
 **Goal:** Deploy Active Directory as a code-defined, observable service integrated with the existing production infrastructure, using enterprise-standard Server Core and a declarative JSON provisioning schema.
-**Status:** In Progress (2025-05-11)
+**Status:** Completed. (2026-05-26)
 
 ### Architecture
 
 Windows VMs are attached to a dedicated `VLAN` bridge managed by OPNsense. `RRAS` and `DHCP` are removed from the Windows Server entirely. OPNsense retains full Layer 3 governance: `DHCP` leases point `VLAN` clients to the Windows Server exclusively for `DNS` resolution. This is the same decoupling pattern applied to every other service in the lab.
 
-**ARCHITECTURAL CONSIDERATION - Physical Layer Segmentation::** To avoid the encapsulation overhead and MTU constraints that come with VXLAN, the AD VLAN will be physically segmented at the switch level. An OpenWRT mesh node, utilizing Distributed Switch Architecture over a B.A.T.M.A.N. Advanced wireless backbone, provisions the tagged VLAN directly to a dedicated secondary NIC on the KVM host. This approach prioritizes leveraging existing hardware and architecture, without compromising stability or performance, since it binds virtual machines to the secondary NIC via `macvtap`, which ensures bare-metal Layer 2 Network performance. OPNsense will handle DHCP broadcast network-wide, and the Active Directory Domain Controller will handle DNS and Authentication within the VLAN.
+**ARCHITECTURAL CONSIDERATION - Physical Layer Segmentation:** To avoid the encapsulation overhead and MTU constraints that come with VXLAN, the AD VLAN will be physically segmented at the switch level. An OpenWRT mesh node, utilizing Distributed Switch Architecture over a B.A.T.M.A.N. Advanced wireless backbone, provisions the tagged VLAN directly to a dedicated secondary NIC on the KVM host. This approach prioritizes leveraging existing hardware and architecture, without compromising stability or performance, since it binds virtual machines to the secondary NIC via `macvtap`, which ensures bare-metal Layer 2 Network performance. OPNsense will handle DHCP broadcast network-wide, and the Active Directory Domain Controller will handle DNS and Authentication within the VLAN.
 
 ### Server Core & PowerShell Remoting
 
@@ -69,7 +69,7 @@ The Stage 1 plaintext provisioning script is replaced with a declarative JSON sc
 
 ### Automated Deployment --- Updated --- (2026-05-20)
 
-The original scope for Stage 2 included leveraging the constraints of the 180-day evaluation period, utilizing Terraform to automate the deployment of an Active Directory Domain from code. During Stage 2, Terraform was removed from the scope of the project entirely. Troubleshooting Windows Server automated deployment in 
+The original scope for Stage 2 included leveraging the constraints of the 180-day evaluation period, utilizing Terraform to automate the deployment of an Active Directory Domain from code. During Stage 2, Terraform was removed from project scope. QEMU VM cloning with PowerShell and Bash automation replaced it as a more realistic on-premises deployment pattern. `See Decision 8` in the Stage 2 operations log for the full rationale.
 
 ### Observability
 
@@ -150,10 +150,12 @@ All engineered failure scenarios are executed here within a fully instrumented e
 | Artifact Type | Stage | Status |
 |--------------|-------|--------|
 | PowerShell User Provisioning Suite (MVP) | 1 → 2 | Complete |
-| Operations Log — Stage 1 Build & Snapshot | 1 | In Progress |
-| ADR: L3 Routing Governance — Windows RRAS vs. OPNsense | 2 | Planned |
-| JSON User Provisioning Schema & Script | 2 | Planned |
-| Grafana Dashboard — Windows Security Events & Suricata | 2 | Planned |
+| Operations Log: Stage 1 Build & Snapshot | 1 | Completes |
+| ~~ADR: L3 Routing Governance: Windows RRAS vs. OPNsense~~ | 2 | REJECTED |
+| JSON User Provisioning Schema & Script | 2 | Complete |
+| Runbook: Mass-AD User Provisioning | 2 | Complete |
+| Operations Log: Stage 2 Build & Snapshot | 2 | Complete |
+| Provisioning Verification Script | 2 | Complete |
 | Runbook: Entra ID Connect | 3 | Planned |
 | Runbook: RHEL Domain Join | 4 | Planned |
 | Incident Report: Password Policy Violation | 5 | Planned |
@@ -162,3 +164,15 @@ All engineered failure scenarios are executed here within a fully instrumented e
 | Incident Report: Bloodhound Collection Analysis | 5 | Planned |
 | Incident Report: Kerberoasting Detection | 5 | Planned |
 | Incident Report: Password Spray Detection | 5 | Planned |
+| Grafana Dashboard: Windows Security Events & Suricata | 5 | Planned |
+---
+
+## Notes for Final Report:
+
+- Terraform Automation Deprecation: The initial roadmap proposed Terraform for automated Active Directory deployment. This was removed from the scope. Testing revealed that injecting Windows autounattend.xml configurations through QEMU/UEFI virtual hardware introduced extreme complexity that distracted from the core identity management objectives. QEMU baseline snapshots paired with native PowerShell automation was adopted as a highly reliable, realistic deployment methodology for this lab scale.
+
+- L2 Mesh Topology Shift: The virtualization host for the Active Directory environment was migrated from the Main Server to the Workstation. Layer 2 testing revealed that the B.A.T.M.A.N. Advanced server node could not reliably act as a VLAN access port for its own physical LAN interface while simultaneously acting as the mesh trunk origin. Relocating the VMs to the Workstation via macvtap successfully preserved the isolated network architecture without requiring out-of-scope mesh protocol debugging.
+
+- Observability Least-Privilege Workaround (Grafana Alloy): The original design mandated a Group Managed Service Account (gMSA) for the Grafana Alloy telemetry agent to adhere to least-privilege principles. While Kerberos authentication and LSA caching were successfully validated, the Alloy Windows service wrapper binary (alloy-service-windows-amd64.exe) failed to inherit the necessary execution permissions under a gMSA. The service was intentionally reverted to LocalSystem to maintain the observability pipeline, and the risk is accepted for this stage.
+
+- ADR for L3 Routing governance is rejected on the basis of repeated work: in reality, the documentation justifying OPNsense L3 governance is established in ADR-001. The only factor that the ADR would add to the documentation is furthermore solved in this very document, above: "The `Domain Controller` is a `DNS` server and an identity provider, not a network appliance." (2026-05-26)
