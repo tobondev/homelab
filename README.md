@@ -9,7 +9,7 @@ If you're evaluating my technical background: start with docs/incidents/ for inc
 The documentation here reflects two distinct phases of the project:
 
 - **Phase 1 (pre-March 2026):** Build fast, break things, learn by doing. Documentation was sparse and retroactive. The current-state architecture docs in `docs/architecture/` represent an honest reconstruction of the decisions that survived this phase, with rationale written from the current vantage point rather than backdated.
-- **Phase 2 (March 2026 onward):** Documentation-first. All architectural decisions are captured as ADRs before or during implementation. New projects (PLGA centralized logging, AD/Azure AD integration) will have full decision records from day one.
+- **Phase 2 (March 2026 onward):** Documentation-first. All architectural decisions are captured as ADRs before or during implementation. New projects (LGAP centralized logging, AD/Azure AD integration) will have full decision records from day one.
 
 This distinction reflects how production infrastructure actually evolves — and being transparent about that is the point.
 
@@ -31,7 +31,6 @@ The output of this is the documentation that you are reading.
 docs/
   architecture/
     CURRENT-STATE.md        # Full current-state documentation with trade-off rationale
-    DECISIONS-HISTORY.md    # Superseded approaches and why they were retired
   adr/                      # Architectural Decision Records (Phase 2 forward)
   runbooks/                 # Operational procedures and incident response
 scripts/
@@ -60,16 +59,24 @@ scripts/
 - **Filesystem:** BTRFS with CoW semantics for native bit-rot protection and instantaneous snapshot-level rollbacks. Chosen over ZFS for native kernel support — critical in a frequent-update Arch environment where DKMS-based ZFS would be a reliability liability.
 - **Bootloader:** systemd-boot, standardized across all systems after deliberate evaluation against GRUB's Argon2ID support limitations at the time of the decision.
 
+## Identity & Access Management
+
+- **Hybrid Domain Infrastructure:** Active Directory Domain Services (Windows Server Core) running in a strictly segmented VLAN. OPNsense retains DHCP and upstream routing, while the Domain Controller acts authoritatively for internal DNS.
+
+- **Automated Provisioning:** Declarative JSON schema and custom PowerShell suite used to provision 1,000+ domain users simultaneously, featuring automated collision handling and tiered password complexity.
+
+- **Engineered Vulnerability:** The environment is deployed as code with intentionally vulnerable artifacts (Kerberoastable service accounts, misconfigured ACLs, weak passwords) to support ongoing offensive/defensive telemetry analysis.
+
 ### Disaster Recovery & Availability
-- **Backup Strategy:** Automated 3-2-1 backup architecture managed by `btrbk` and `rClone`. Local snapshots, cross-host SSH replication (using btrbk's restricted SSH helper to limit key exposure), and offsite cold storage with a 6-month Glacier bucket rotation for cost containment.
+- **Backup Strategy:** Automated 3-2-1 backup architecture managed by `btrbk` and `rclone`. Local snapshots, cross-host SSH replication (using btrbk's restricted SSH helper to limit key exposure), and offsite cold storage with a 6-month Glacier bucket rotation for cost containment.
 - **Warm Failback:** Pre-configured standby hardware with a validated rollback path. Architecture supports zero-downtime recovery from most failure scenarios.
 - **Default Known-Good State:** systemd-boot fallback snapshot integration ensures a bootable known-good state is always one selection away; a dynamic replacement for GRUB-btrs using systemdboot is under production.
 
 ### Containerization & Workloads
 - **Deployment Model:** Modular Docker Compose stacks with BTRFS bind mounts for stateful services, enabling atomic backup and restore of service state alongside container configuration.
 - **Ansible:** Configuration management and automated provisioning across bare-metal and VM infrastructure.
-- **Secrets Management:** Local Vaultwarden instance as the authoritative secrets store; `.env` isolation enforced at the compose level.
-- **Observability:** Grafana stack (Loki, Grafana, Alloy, Prometheus) for centralized telemetry, log aggregation, and alerting across services and infrastructure.
+- **Secrets Management:** Local Vaultwarden instance as the authoritative secrets store; `.env` isolation enforced at the compose level, secured and version-controlled with SOPS-encryption.
+- **Cross-OS Observability:** Grafana stack (Loki, Grafana, Alloy, Prometheus) for centralized telemetry, log aggregation, and alerting across services and infrastructure, including Active Directory Domain Controllers for Windows Event Log ingestion and processing.
 - **Testing Pipeline:** QEMU/KVM with Open vSwitch for virtual-to-physical staging, enabling hardware-in-the-loop validation before production deployment.
 
 ### Zero-Trust Ingress
@@ -82,16 +89,18 @@ scripts/
 
 The following are in active planning or early implementation. ADRs will be published as decisions are finalized.
 
-- **Active Directory / Azure AD:** Mixed-OS domain integration (Linux + Windows), including RHEL enrollment and Entra ID hybrid scenarios. [In Progress]
+- **EntraID Cloud Bridge:** Synchronizing on-premise AD Domain with a Microsoft 365 tenant using EntraID Connect to test SSO and Conditional Access policies. [Planned]
+- **Offensive Security & Defensive Analysis:** Executing Bloodhound, Kerberoasting, and password spraying against the vulnerable AD environment to capture and map defensive telemetry in Grafana. [Planned]
+- **Hybrid OS Active Directory Domain:** Mixed-OS domain integration (Linux + Windows), using `realmd`, `sssd` and `Kerberos` to enroll RHEL clients in an Active Directory Domain. [Planned]
 - **Suricata IDS:** IDS system runnig on OPNsense hardware, which provides a first layer of detection and response for robust network security. [Partially deployed. Tuning Monitoring.]
 - **Wazuh XDR:** Deploying Wazuh VM, integrating with OPNsense's wazuh agent to provide network-wide protection. Configure log forwarding to Grafana Stack. [Planned]
-- **Centralized Logging with Grafana Stack:**  Grafana, Loki, Prometheus and Alloy to allow SIEM integration for log correlation, alert triage, and security event visibility across Network, IDS, IPS, XDR, Hosts and  Docker Stacks. [Deployed. Alerting pipeline under development]
+
 
 ---
 
 ## Contact
 
 - **Portfolio:** [tobon.dev](https://tobon.dev)
-- **Email:** [marcostobon@proton.me](mailto:marcostobon@proton.me)
+- **Email:** [marcos@tobon.dev](mailto:marcos@tobon.dev)
 - **LinkedIn:** [Marcos Tobon](https://tobon.dev/linkedin)
 - **GitHub:** [github.com/tobondev](https://tobon.dev/github)
