@@ -8,19 +8,18 @@ $originalPolicy = Get-ADDefaultDomainPasswordPolicy -Identity $domain
 Write-Host "Current Domain Complexity: $($originalPolicy.ComplexityEnabled)" -ForegroundColor DarkGray
 Write-Host "Current Minimum Length: $($originalPolicy.MinPasswordLength)" -ForegroundColor DarkGray
 
-# Drop Password Policy temporarily
-Write-Host "Temporarily disabling password policy enforcement..." -ForegroundColor Yellow
-Set-ADDefaultDomainPasswordPolicy -Identity $domain -ComplexityEnabled $false -MinPasswordLength 0
-
-# Wait to ensure the policy is updated in memory
-Start-Sleep -Seconds 2
 # Capture the current domain policy state
 try {
+    # Drop Password Policy temporarily
+    Write-Host "Temporarily disabling password policy enforcement..." -ForegroundColor Yellow
+    Set-ADDefaultDomainPasswordPolicy -Identity $domain -ComplexityEnabled $false -MinPasswordLength 0
+
+    # Wait to ensure the policy is updated in memory
+    Start-Sleep -Seconds 2
     # Ensure the error log isn't appended to endlessly
     $errorLog = ".\provisioning_errors.log"
     if (Test-Path $errorLog) { Remove-Item $errorLog -Force }
     $data = Get-Content $JsonPath -Raw | ConvertFrom-Json
-        $errorLog = ".\provisioning_errors.log"
 
         $baseDN = "DC=tobon,DC=dev"
         $groupsOu = "OU=_GROUPS,$baseDN"
@@ -105,7 +104,6 @@ try {
                 }
             }
             catch {
-                # Capture the exact error from the Domain Controller
                 $errorMessage = $_.Exception.Message
 
                 # Print a non-terminating yellow warning to the console

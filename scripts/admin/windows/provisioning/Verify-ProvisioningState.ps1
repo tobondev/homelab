@@ -1,4 +1,4 @@
-# Test-ProvisioningStatus.ps1
+# Verify-ProvisioningState.ps1
 
 $transcriptPath = ".\Artifacts\2026_AD_Provisioning_Verification_$(Get-Date -Format 'yyyyMMdd_HHmm').log"
 # Ensure artifact directory exists

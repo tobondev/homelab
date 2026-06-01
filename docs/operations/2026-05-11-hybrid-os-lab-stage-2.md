@@ -427,7 +427,7 @@ Then, GPMC was used to add the `svc-alloy` to the allowed Log on as service poli
 
 ![GPMC svc-alloy Allow Log On as Service](../artifacts/hybrid-os-lab-stage-2/2026-05-22_AD_GPMC_LogOnAsService_alloy.png)
 
-On the Domain Controller, Grafana installation was performed by downloading the installer from the official Grafana Github Repository, then running the exe silently, with additional flags retrieved from the Grafana docs:
+On the Domain Controller, Grafana Alloy installation was performed by downloading the installer from the official Grafana Github Repository, then running the exe silently, with additional flags retrieved from the Grafana docs:
 
 ```powershell
 
@@ -684,7 +684,7 @@ Mapping table:
 
 Because some users might belong to multiple groups, the assigned complexity requirement for each user is defined by weighting. Priority order (highest wins): LOW (0) < MEDIUM (1) < HIGH (2) < INVALID (3) < ROAST (4). This guarantees that Domain accounts can have weak passwords if they are selected to do so, and that Kerberoastable accounts are always the weakest.
 
-Because these passwords are deliberately weakened compared to a real-life environment, the default complexity rules for an Active Directory Domain need to be bypassed. Because this is inherently risky, the `Provision-From-JSON.ps1` script is wrapped in a `try/finally` block as a safety measure. It will disable password complexity before it starts provisioning, and it will re-enable it upon termination, for whatever reason, including errors and manual halting. This ensures that if the scripts errors out the AD Domain will not continue to hold an insecure password policy, while allowing deliberately weak passwords that can be monitored and audited to generate security alerts, and can be actively exploited for Stage 5. Kerberoastable Service Accounts were declared manually in the scripts, to guarantee that there is a known amount of accounts with predictable names and functions, while still maintaining random password assignment that follows the complexity policy.
+Because these passwords are deliberately weakened compared to a real-life environment, the default complexity rules for an Active Directory Domain need to be bypassed. Because this is inherently risky, the `Provision-From-JSON.ps1` script is wrapped in a `try/finally` block as a safety measure. It will disable password complexity before it starts provisioning, and it will re-enable it upon termination, for whatever reason, including errors and manual halting. This ensures that if the scripts errors out the AD Domain will not continue to hold an insecure password policy, while allowing deliberately weak passwords that can be monitored and audited to generate security alerts, and can be actively exploited for Stage 5. Kerberoastable Service Accounts were declared manually in the scripts, to guarantee that there is a known number of accounts with predictable names and functions, while still maintaining random password assignment that follows the complexity policy.
 
 
 ### Phase 3 (Verification): 
