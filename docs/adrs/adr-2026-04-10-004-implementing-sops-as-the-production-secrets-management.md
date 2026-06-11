@@ -1,13 +1,20 @@
 # ADR 004: Implementing SOPS as the Production Secrets Management
 
-File: adr-2026-04-10-004-implementing-sops-as-the-production-secrets-management.md
-Title: Implementing SOPS as the Production Secrets Management
-Date: 2026-04-10
-Status: Implemented
-Decider(s): Marcos Tobon
-Owner: @tobondev
-Confidence: High
-Review-by: 2026-06-10
+**File:** adr-2026-04-10-004-implementing-sops-as-the-production-secrets-management.md
+
+**Title:** Implementing SOPS as the Production Secrets Management
+
+**Date:** 2026-04-10
+
+**Status:** Implemented
+
+**Decider(s):** Marcos Tobon
+
+**Owner:** @tobondev
+
+**Confidence:** High
+
+**Review-by:** 2026-06-10
 
 ---
 

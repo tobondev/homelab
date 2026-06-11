@@ -91,9 +91,9 @@ The following are in active planning or early implementation. ADRs will be publi
 
 - **EntraID Cloud Bridge:** Synchronizing on-premise AD Domain with a Microsoft 365 tenant using EntraID Connect to test SSO and Conditional Access policies. [Planned]
 - **Offensive Security & Defensive Analysis:** Executing Bloodhound, Kerberoasting, and password spraying against the vulnerable AD environment to capture and map defensive telemetry in Grafana. [Planned]
+- **Suricata IDS:** IDS system runnig on OPNsense hardware, which provides a first layer of detection and response for robust network security. [Partially deployed. Tuning based on Offensive Security Work]
 - **Hybrid OS Active Directory Domain:** Mixed-OS domain integration (Linux + Windows), using `realmd`, `sssd` and `Kerberos` to enroll RHEL clients in an Active Directory Domain. [Planned]
-- **Suricata IDS:** IDS system runnig on OPNsense hardware, which provides a first layer of detection and response for robust network security. [Partially deployed. Tuning Monitoring.]
-- **Wazuh XDR:** Deploying Wazuh VM, integrating with OPNsense's wazuh agent to provide network-wide protection. Configure log forwarding to Grafana Stack. [Planned]
+- **Wazuh XDR:** Deploying Wazuh VM, integrating with OPNsense's wazuh agent to provide network-wide protection. Configure log forwarding to Grafana Stack. [In-Progress]
 
 
 ---

@@ -1,13 +1,20 @@
 # ADR 003: Ansible-Driven OpenWRT Provisioning for batman-adv Mesh
 
-File: adr-2026-04-05-003-ansible-driven-openwrt-provisioning-for-batman-adv-mesh.md
-Title: Ansible-Driven OpenWRT Provisioning for batman-adv Mesh
-Date: 2026-04-05
-Status: Implemented
-Decider(s): Marcos Tobon
-Owner: @tobondev
-Confidence: High
-Review-by: 2026-11-05
+**File:** adr-2026-04-05-003-ansible-driven-openwrt-provisioning-for-batman-adv-mesh.md
+
+**Title:** Ansible-Driven OpenWRT Provisioning for batman-adv Mesh
+
+**Date:** 2026-04-05
+
+**Status:** Implemented
+
+**Decider(s):** Marcos Tobon
+
+**Owner:** @tobondev
+
+**Confidence:** High
+
+**Review-by:** 2026-11-05
 
 ---
 
@@ -311,5 +318,4 @@ Current provisioning RTO via LuCI restore is approximately 15 minutes per node. 
 ---
 
 ## Index Registration
-
 > **Index Entry:** | 003 | 2026-04-05 | [Ansible-Driven OpenWRT Provisioning for batman-adv Mesh](adrs/adr-2026-04-05-003-ansible-driven-openwrt-provisioning-for-batman-adv-mesh.md) | Implemented |

@@ -1,13 +1,19 @@
 # ADR 005: LGAP Stack for SIEM and IDS Integration
 
-File: adr-2026-04-04-005-lgap-stack-for-siem-and-ids-integration.md
-Title: LGAP Stack for SIEM and IDS Integration
-Date: 2026-04-04
-Status: In Progress
-Decider(s): @tobondev
-Owner: @tobondev
-Confidence: High 
-Review-by: 2026-06-11
+**File**: adr-2026-04-04-005-lgap-stack-for-siem-and-ids-integration.md
+**Title:** LGAP Stack for SIEM and IDS Integration
+
+**Date:** 2026-04-04
+
+**Status:** In Progress
+
+**Decider(s):** @tobondev
+
+**Owner:** @tobondev
+
+**Confidence:** High 
+
+**Review-by:** 2026-06-11
 
 ---
 

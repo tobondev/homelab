@@ -1,13 +1,20 @@
 # ADR 002: Hybrid vulnerability patching Posture for Core OPNsense packages
 
-File: adr-20260403-002-hybrid-patching-posture.md
-Title: Adopt source-level patching and automated upstream monitoring for critical vulnerabilities.
-Date: 2026-04-03
-Status: Accepted
-Decider(s): @tobondev
-Owner: @tobondev
-Confidence: High
-Review-by: 2026-10-03
+**File:** adr-20260403-002-hybrid-patching-posture.md
+
+**Title:** Adopt source-level patching and automated upstream monitoring for critical vulnerabilities.
+
+**Date:** 2026-04-03
+
+**Status:** Implemented
+
+**Decider(s):** @tobondev
+
+**Owner:** @tobondev
+
+**Confidence:** High
+
+**Review-by:** 2026-10-03
 
 ---
 
@@ -93,3 +100,14 @@ Top risks:
 **Resolution Log:**
 - **2026-04-22:** Upstream parity achieved. Following the automated alert, a system snapshot was created. The package was unlocked (`pkg unlock -y curl`), updated, and upgraded to `8.19.0_2`. Because no uninstallation was required prior to the upgrade, the process was seamless. The firewall package base is now fully re-aligned with the OPNsense official upstream source. The hybrid patching procedure outlined in this ADR is considered fully verified.
 
+## Minimal ADR checklist
+- [x] One-line decision statement present
+- [x] Acceptance criteria defined and measurable
+- [x] Test artifacts linked and reproducible
+- [x] Rollback plan documented and timed
+- [x] Confidence and review date set
+- [ ] Rolled out and tested recovery plan
+
+---
+## Index Registration
+> **Index Entry:** | 002 | 2026-04-03 | [Adopt source-level patching and automated upstream monitoring](adrs/adr-2026-04-03-002-hybrid-patching-posture.md) | Implemented |

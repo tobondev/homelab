@@ -1,10 +1,15 @@
 # Incident Report: Root Drive LUKS Partition Accidental Deletion and Recovery
 
 **Date of Incident:** 2025-11-06
+
 **Date of Report:** 2025-11-06
+
 **Reconstructed:** 2026-04-01 (original report recreated based on rough outline written day-of; reconstruction noted per documentation standards)
+
 **Status:** Resolved
+
 **Severity:** Critical
+
 **Services Impacted:** Primary Workstation — full root filesystem
 
 ---

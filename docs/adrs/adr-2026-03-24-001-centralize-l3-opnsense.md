@@ -1,13 +1,20 @@
 # ADR 001 Centralize L3 services on OPNsense (Lenovo M920q)
 
-File: adr-20260324-001-centralize-l3-opnsense.md
-Title: Centralize L3 services on OPNsense (Lenovo M920q)
-Date: 2026-03-24
-Status: Accepted
-Decider(s): @tobondev
-Owner: @tobondev
-Confidence: High
-Review-by: 2027-03-24
+**File:** adr-20260324-001-centralize-l3-opnsense.md
+
+**Title:** Centralize L3 services on OPNsense (Lenovo M920q)
+
+**Date:** 2026-03-24
+
+**Status:** Implemented
+
+**Decider(s):** @tobondev
+
+**Owner:** @tobondev
+
+**Confidence:** High
+
+**Review-by:** 2027-03-24
 
 ## 1. Context and Problem Statement
 **One-line summary:** Move DHCP, DNS, and firewalling off the OpenWRT Google WiFi node and onto a dedicated OPNsense appliance to remove the L3 single point of failure and enable IDS/IPS and centralized logging.
@@ -25,6 +32,7 @@ Review-by: 2027-03-24
 
 ## 3. Decision Outcome
 **Chosen option:** Option B — OPNsense on Lenovo M920q. 
+
 **Decision statement:** Centralize Layer 3 governance on a dedicated OPNsense appliance (Lenovo M920q) to remove the L3 SPOF, enable IDS/IPS and DNS sinkholing, and provide a validated warm-fallback rollback path.
 
 **Rationale**
@@ -79,6 +87,7 @@ Review-by: 2027-03-24
 
 ## 10. Post-implementation Review
 **Date implemented:** 2026-03-31
+
 **Outcome:** Pass.
 	- **AC-1:** Verified in `artifacts/opnsense/port-mapping-2026-03-31.md`
 	- **AC-2:** Verified in `artifacts/opnsense/pfctl-out-sanitized-2026-03-31.md`
@@ -105,3 +114,7 @@ Review-by: 2027-03-24
 - [x] Rollback plan documented and timed
 - [x] Confidence and review date set
 - [x] Rolled out and tested recovery plan
+
+---
+## Index Registration
+> **Index Entry:** | 001 | 2026-03-24 | [Centralize L3 services on OPNsense (Lenovo M920q)](adrs/adr-2026-03-24-001-centralize-l3-opnsense.md) | Implemented |

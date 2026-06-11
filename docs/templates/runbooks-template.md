@@ -1,12 +1,19 @@
 # Runbook: {{RAW_TITLE}}
 
 **ID:** runbook-{{CURRENT_DATE}}-{{SEQ_ID}}
+
 **Owner:** {{OWNER_HANDLE}}
+
 **Severity class:** [Critical | High | Medium | Low]
+
 **Last tested:** {{CURRENT_DATE}}
+
 **Prereqs:** [e.g., SSH/Console access; root privileges; verified VM snapshot or configuration backup path]
+
 **Trigger:** [What specific alert, finding, or event should trigger the execution of this runbook?]
+
 **Estimated execution time:** [e.g., 00:15]
+
 **Automation hooks:** [e.g., scripts/ansible/playbooks or cron jobs]
 
 ---

@@ -1,20 +1,28 @@
 # ADR {{SEQ_ID}}: {{RAW_TITLE}}
 
-File: {{FILENAME_BASE}}
-Title: {{RAW_TITLE}}
-Date: {{CURRENT_DATE}}
-Status: [Proposed | Accepted | Superseded | Deprecated]
-Decider(s): {{OWNER_NAME}}
-Owner: {{OWNER_HANDLE}}
-Confidence: [High | Medium | Low]
-Review-by: [YYYY-MM-DD - e.g., 6 or 12 months from Date]
+**File:** {{FILENAME_BASE}}
+
+**Title:** {{RAW_TITLE}}
+
+**Date:** {{CURRENT_DATE}}
+
+**Status:** [Proposed | Accepted | Superseded | Deprecated]
+
+**Decider(s):** {{OWNER_NAME}}
+
+**Owner:** {{OWNER_HANDLE}}
+
+**Confidence:** [High | Medium | Low]
+
+**Review-by:** [YYYY-MM-DD - e.g., 6 or 12 months from Date]
 
 ---
 
 ## 1. Context and Problem Statement
 
-One-line summary: Single sentence that states the decision.  
-Background: Short paragraph describing the technical constraint, security requirement, or business driver. Include relevant metrics (CPU, memory, latency, MTTR targets) where applicable. Describe the technical or security requirement driving this decision.
+**One-line summary:** Single sentence that states the decision.
+
+**Background:** Short paragraph describing the technical constraint, security requirement, or business driver. Include relevant metrics (CPU, memory, latency, MTTR targets) where applicable. Describe the technical or security requirement driving this decision.
 
 *Example: "The current L3 routing on OpenWRT hardware has reached a resource ceiling, preventing IDS/IPS deployment."*
 

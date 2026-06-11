@@ -1,8 +1,11 @@
 # Sysadmin Log: Deploying a Secrets Management Implementation with SOPS
 
 **Date:** 2026-04-10
+
 **Report Time:** 16:56
+
 **Category:** Architecture | Security
+
 **Status:** Implemented
 
 ---

@@ -1,10 +1,15 @@
 # Runbook: Mass AD User Provisioning with JSON Schema
 
 **ID:** runbook-2026-05-26-003-mass-ad-user-provisioning-with-json-schema
+
 **Owner:** @tobondev
+
 **Severity class:** Medium
+
 **Last tested:** 2026-05-26
+
 **Estimated execution time:** ~10 minutes (script runtime scales O(n) with user count)
+
 **Automation hooks:** Manual execution via PowerShell Remoting or scheduled task
 
 **Prerequisites:**

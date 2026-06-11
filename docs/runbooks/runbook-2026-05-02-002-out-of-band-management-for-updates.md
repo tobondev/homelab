@@ -1,12 +1,19 @@
 # Runbook: Out Of Band Management For Updates
 
 **ID:** runbook-2026-05-02-002
+
 **Owner:** @tobondev
+
 **Severity class:** High
+
 **Last tested:** 2026-05-02
+
 **Prereqs:** Cloudflared, Cockpit, Docker, Bitwarden Vault Access, Fallback BTRFS Snapshot, `meshcommander` alias available.
+
 **Trigger:** Confirmed Critical Vulnerabilities (Triage per ADR006), with packages available in the ArchLinux Repository (`arch-audit -uc`).
+
 **Estimated execution time:** 15:00
+
 **Automation hooks:** None yet
 
 ---

@@ -1,8 +1,11 @@
 # Sysadmin Log: OPNsense Deployment
 
 **Date:** 2026-03-31
+
 **Report Time:** 07:26
+
 **Category:** Architecture | Maintenance | Deployment
+
 **Status:** Completed
 
 ---

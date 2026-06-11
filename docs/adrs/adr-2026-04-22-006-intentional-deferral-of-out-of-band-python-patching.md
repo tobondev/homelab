@@ -1,13 +1,20 @@
 # ADR 006: Intentional Deferral of Out-of-Band Python Patching
 
-File: adr-2026-04-22-006-intentional-deferral-of-out-of-band-python-patching.md
-Title: Intentional Deferral of Out-of-Band Python Patching
-Date: 2026-04-22
-Status: Accepted
-Decider(s): Marcos Tobon
-Owner: @tobondev
-Confidence: High
-Review-by: 2026-05-27
+**File:** adr-2026-04-22-006-intentional-deferral-of-out-of-band-python-patching.md
+
+**Title:** Intentional Deferral of Out-of-Band Python Patching
+
+**Date:** 2026-04-22
+
+**Status:** Implemented
+
+**Decider(s):** Marcos Tobon
+
+**Owner:** @tobondev
+
+**Confidence:** High
+
+**Review-by:** 2026-05-27
 
 ---
 
