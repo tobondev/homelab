@@ -26,13 +26,62 @@
 
 *Example: "The current L3 routing on OpenWRT hardware has reached a resource ceiling, preventing IDS/IPS deployment."*
 
-## 2. Considered Options (summary table)
- 
-### Provide each option as a row in a compact table and include a short rationale.
+## 2. Considered Options
 
-| Option ID | Short name | Description | Security | Cost | Complexity | Time to implement |
-|---------|------|---------|----------|------------|--------|------------|
-| A | [e.g., Upgrade OpenWRT] | [e.g., Replace main node with higher-spec hardware] | [e.g., Medium] | [e.g., Low] | [e.g., Medium] | [e.g., 2-4 weeks] |
+*This section documents the viable alternatives you evaluated. Start with a summary table for quick comparison, then provide a detailed subsection for **each** option you seriously considered (typically 3–6 options).*
+
+### 2.1 Summary Table
+
+*Fill in the table with one row per option. Use short, meaningful names and concise descriptions. Rate each criterion as High/Medium/Low or provide rough estimates.*
+
+| Option ID | Short Name | Description | Security Impact | Cost | Complexity | Time to Implement |
+|-----------|------------|-------------|----------------|------|------------|-------------------|
+| A | *e.g., Extend existing stack* | *e.g., Add detection logic to current observability tools* | *e.g., Low (no endpoint agents)* | *e.g., Zero* | *Low* | *1–2 weeks* |
+| B | *e.g., Dedicated XDR* | *e.g., Deploy open‑source XDR with agents on all endpoints* | *High (full visibility & response)* | *Low (operational overhead)* | *Medium* | *3–4 weeks* |
+| C | *e.g., Cloud SIEM* | *e.g., Use vendor SaaS with free trial* | *Medium (no on‑prem control)* | *High after trial* | *Low to start* | *1 week* |
+| *(add rows as needed)* | | | | | | |
+
+### 2.2 Detailed Option Descriptions
+
+*For each option listed in the summary table, write a subsection like the one below. Repeat the structure for Options A, B, C, etc. Include a brief description, then bullet lists of pros and cons.*
+
+---
+
+#### Option A: *[Short name from table]*
+
+**Description:** *2–3 sentences explaining the option in technical terms. What is deployed, configured, or changed? What components are involved?*
+
+- **Pros:**
+  - *List concrete advantages (e.g., low operational overhead, native integration, open source, resume value).*
+  - *Focus on security, performance, maintainability, and cost.*
+- **Cons:**
+  - *List concrete disadvantages (e.g., missing features, scalability limits, licensing costs, vendor lock‑in).*
+  - *Be honest about gaps that might affect the decision.*
+
+---
+
+#### Option B: *[Short name from table]*
+
+**Description:** *…*
+
+- **Pros:**
+  - *…*
+- **Cons:**
+  - *…*
+
+*(Repeat for each option you evaluated.)*
+
+---
+
+### Guidance for Writing This Section
+
+- **Only include realistic options** – do not add “do nothing” unless it is a credible alternative.
+- **The summary table should be scannable** – use it to highlight key trade‑offs.
+- **The detailed subsections should justify your scoring** – a “Low” security rating in the table must be explained in the cons.
+- **Keep descriptions factual and impersonal** – avoid “I think” or “we believe”. State what the option does or does not provide.
+- **If an option is clearly inferior**, still include it briefly – it shows due diligence. You can note in the decision section why it was rejected.
+
+---
 
 ## 3. Decision Outcome
 
