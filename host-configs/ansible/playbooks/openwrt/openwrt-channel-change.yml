@@ -1,0 +1,97 @@
+---
+# Change Mesh Channel for Routers (OpenWRT batman-adv mesh)
+#
+# Usage:
+#   ansible-playbook openwrt-channel-change.yml -e "channel={channel number}" --tags={stage,render}
+#
+# Channel Selection:
+#                  A channel must be defined with an extra var as seen above.
+#                  This playbook will fail to execute otherwise.
+#
+# Tags:
+#   --tags stage   — Set the new channel and commit the changes. Deadman's switch.
+#   --tags trigger — Reload the wireless service asynchronously
+#
+#
+# NOTE:
+#        at least one of the tags is required. This playbook will fail to execute
+#       if no tags are set, or "all" tag is used. This is expected behaviour.
+#       This ensures that no router reboots before all routers are set correctly.
+ - name: Change Wireless Channel for Routers - Network Performance Playbook
+   hosts: routers, fallback
+   gather_facts: yes
+  ## All vars are temporary, they will be set per-host.
+   vars:
+    secrets_file: "./openwrt-secrets.yml"
+    chosen_channel: "{{ channel }}"
+   tasks:
+    - name: Enforce Operational Guardrails (Mutual Exclusivity)
+      ansible.builtin.fail:
+        msg: "Execution denied. You must specify exactly one operational phase. Use '--tags=stage' OR '--tags=trigger'."
+      when:  ('stage' in ansible_run_tags and 'trigger' in ansible_run_tags) or ('all' in ansible_run_tags) or ('stage' not in ansible_run_tags and 'trigger' not in ansible_run_tags)
+      tags: [always]
+    - name: Enforce Channel Selection
+      ansible.builtin.fail:
+        msg: "Execution denied. You must choose a channel. Use '--chosen_channel={channel number}'."
+      when: chosen_channel | length <= 0
+      tags: [always]
+    - name: Load Encrypted SOPS Variables
+      community.sops.load_vars:
+        file: "{{ secrets_file }}"
+      tags: [always]
+    # ─────────────UCI CONDITIONAL CONFIG──────────────────────────────────────
+
+    # GET CURRENT STATE
+
+    - name: Get UCI settings
+      community.openwrt.uci:
+        command: get
+        key: wireless.radio1.channel
+      register: current_radio_channel
+      tags: [always]
+
+    # CONDITIONAL STATE SWITCH
+
+    - name: Set New Radio Channel
+      community.openwrt.uci:
+        command: set
+        key: wireless.radio1.channel
+        value: '{{ chosen_channel }}'
+      tags: [stage]
+
+    # GET CURRENT STATE
+
+    - name: Get UCI settings
+      community.openwrt.uci:
+        command: get
+        key: wireless.radio1.channel
+      register: new_radio_channel
+      tags: [stage]
+
+    # CONDITIONAL COMMIT
+
+    - name: Commit New Radio Channel
+      community.openwrt.uci:
+        command: commit
+        key: wireless.radio1.channel
+      tags: [stage]
+      when:
+        - "'test_run' not in ansible_run_tags"
+
+    - name: Trigger Network Reload
+      ansible.builtin.shell: wifi reload
+      async: 60
+      poll: 0
+      tags: [trigger]
+
+    # ─────────────ARTIFACT BUILDING───────────────────────────────────────────
+
+    - name: Change Channel | Render Playbook Artifact
+      template:
+        src: templates/channel-report.j2
+        dest: "{{ artifacts_dir }}/{{ inventory_hostname }}-{{ ansible_date_time.date }}-{{ ansible_date_time.time }}-channel-change-report.md"
+      delegate_to: localhost
+      become: false
+      tags: [stage,test_run]
+      when:
+        - "'norender' not in ansible_run_tags"
