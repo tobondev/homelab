@@ -1,0 +1,36 @@
+<group name="ids,suricata,">
+  <!-- Map severity 1 to rule level 15 -->
+  <rule id="86681" level="15">
+    <if_sid>86601</if_sid>
+    <field name="alert.severity">^1$</field>
+    <description>Suricata: Alert - $(alert.signature)</description>
+  </rule>
+
+  <!-- Map severity 2 to rule level 10 -->
+  <rule id="86682" level="10">
+    <if_sid>86601</if_sid>
+    <field name="alert.severity">^2$</field>
+    <description>Suricata: Alert - $(alert.signature)</description>
+  </rule>
+
+  <!-- Map severity 3 to rule level 5 -->
+  <rule id="86683" level="5">
+    <if_sid>86601</if_sid>
+    <field name="alert.severity">^3$</field>
+    <description>Suricata: Alert - $(alert.signature)</description>
+  </rule>
+
+  <!-- Map severity 4 to rule level 3 -->
+  <rule id="86684" level="3">
+    <if_sid>86601</if_sid>
+    <field name="alert.severity">^4$</field>
+    <description>Suricata: Alert - $(alert.signature)</description>
+  </rule>
+
+  <!-- Map any severity not 1-4 to rule level 1 -->
+  <rule id="86685" level="1">
+    <if_sid>86601</if_sid>
+    <field name="alert.severity" type="pcre2">^(?![1234]$).*</field>
+    <description>Suricata: Alert - $(alert.signature)</description>
+  </rule>
+</group>

@@ -274,13 +274,13 @@ Objective and Scope: Deploy Wazuh through Docker Compose on the Main Server and 
 - Run a Network-wide port scan to trigger Suricata Alerts and verify MITRE-mapped event decoding in Wazuh Dashboard.
 
 Pass Conditions:
-- [ ] All Containers Healthy.
-- [ ] Enrollment Endpoint Responding.
-- [ ] Dashboard Auth Success.
-- [ ] OPNsense Agent Active in Dashboard.
-- [ ] Suricata Alerts triggered from Port-scan.
-- [ ] Wazuh correctly applies MITRE mapping to event.
-- [ ] MVP Deployment Documented.
+- [X] All Containers Healthy. (2026-07-08)
+- [X] Enrollment Endpoint Responding. (2026-07-08)
+- [X] Dashboard Auth Success. (2026-07-08)
+- [X] OPNsense Agent Active in Dashboard. (2026-07-08)
+- [X] Suricata Alerts triggered from Port-scan. (2026-07-08)
+- [ ] Wazuh correctly applies MITRE mapping to event. [POSTPONED to Phase 3]. [See Operations Log](../operations/2026-06-26-wazuh-mvp-deployment.md) Section #4.
+- [X] MVP Deployment Documented. (2026-07-08)
 
 **Phase 2:** Linux Agent Enrollment
 
