@@ -212,7 +212,7 @@ Because the fallback node remained powered off during the April 14 hardening win
 3. **Provisioning Verification:** Run `openwrt-provision-nodes.yml` with `--tags render` to verify the node matches the desired `standalone` or `ap_only` role.
 4. **Credential Rotation:** Execute `ansible-security-hardening.yml`. This replaces the baked-in provisioning key with a unique production ED25519 key and randomizes the root password.
 5. **Network Lockdown:** Execute `openwrt-luci-lockdown.yml` and `port-rotation.yml` to secure the management interfaces.
-6. **Deployment:** Once reports are generated in `docs/artifacts/ansible/`, the node is ready for production integration.
+6. **Deployment:** Once reports are generated in `docs/artifacts/openwrt/ansible/`, the node is ready for production integration.
 
 **Cross-reference:** See `ADR-004` and
 `docs/operations/2026-04-10-deploying-a-secrets-management-implementation-with-sops.md` for the

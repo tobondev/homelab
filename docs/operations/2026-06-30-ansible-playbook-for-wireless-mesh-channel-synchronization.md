@@ -81,7 +81,7 @@ ok: [Bathroom_AP]
 ok: [Bedroom_AP]
 ```
 
-The artifact provides [additional verification](../artifacts/ansible/Portal_Ansible-2026-06-30-22:46:17-channel-change-report.md) by keeping track of the old and new channels. 
+The artifact provides [additional verification](../artifacts/openwrt/ansible/Portal_Ansible-2026-06-30-22:46:17-channel-change-report.md) by keeping track of the old and new channels. 
 
 Once satisfied, the trigger was run:
 

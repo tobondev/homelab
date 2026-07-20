@@ -77,7 +77,7 @@ The original scope for Stage 2 included leveraging the constraints of the 180-da
 
 ---
 
-## Stage 3: Cloud Bridge
+## Stage 3: Cloud Bridge [POSTPONED after Stage 5]
 
 **Goal:** Synchronize the on-premise domain with a Microsoft 365 cloud tenant to establish and document a hybrid identity architecture.
 **Status:** Planned
@@ -94,10 +94,10 @@ Integration of the local AD domain with a Microsoft 365 Business Premium 30-day 
 
 ---
 
-## Stage 4: Cross-OS Domain Integration
+## Stage 4: Cross-OS Domain Integration [PRIORITIZED to follow Stage 2]
 
-**Goal:** Enforce centralized identity across operating systems by joining a `RHEL` endpoint to the Windows domain.
-**Status:** Planned
+**Goal:** Enforce centralized identity, authentication and access management across operating systems by joining a `RHEL` endpoint to the Windows domain.
+**Status:** Completed
 
 ### Architecture
 
@@ -114,12 +114,16 @@ Each layer has its own log surface, and each is exercised by the fault injection
 
 - Successful `SSH` authentication into the `RHEL` endpoint using a `Windows AD` credential.
 - Validated `Kerberos TGT` generation (`klist`) for the domain user post-login.
-- Sudo access governed by AD group membership via `SSSD`'s simple_allow_groups or ad_access_filter — not local /etc/sudoers entries.
+- ~~Sudo access governed by AD group membership via `SSSD`'s simple_allow_groups or ad_access_filter — not local /etc/sudoers entries.~~ [SUPERSEDED]
+- Govern Sudo Access in Domain-Joined Systems using both industry standards:
+  - AD Group Membership mapped to a custom entry in `/etc/sudoers.d`, orchestrated using Ansible.
+  - Extended AD Schema using `ldfi` to add a`sudoers` OU containing the `sudoRole`, `sudoCommand`, `sudoHost` and `sudoUser` attributes.
 - Document the full join procedure as a runbook with exact terminal output captured via `Journal Helper`.
+- Create Domain-Join Ansible Playbook for both standards.
 
 ---
 
-## Stage 5: Offensive Security & Defensive Analysis
+## Stage 5: Offensive Security & Defensive Analysis [PRIORITIZED to follow Stage 4]
 
 **Goal:** Expose the Active Directory environment to deliberate attack techniques and document the defensive telemetry each one generates.
 **Status:** Planned
