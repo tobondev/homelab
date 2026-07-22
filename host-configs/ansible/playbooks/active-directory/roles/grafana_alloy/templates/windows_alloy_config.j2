@@ -1,0 +1,41 @@
+// ── Loki destination ──────────────────────────────────────────
+loki.write "default" {
+  endpoint {
+    url = "{{ loki_push_url }}"
+  }
+}
+
+// ── Security Event Log ────────────────────────────────────────
+loki.source.windowsevent "security" {
+  eventlog_name = "Security"
+  forward_to    = [loki.write.default.receiver]
+
+  labels = {
+    job     = "windows_eventlog",
+    host    = "{{ agent_name | default('ansible_host')}}",
+    channel = "security",
+  }
+}
+
+// ── System Event Log ──────────────────────────────────────────
+loki.source.windowsevent "system" {
+  eventlog_name = "System"
+  forward_to    = [loki.write.default.receiver]
+
+  labels = {
+    job     = "windows_eventlog",
+    host    = "{{ agent_name | default('ansible_host')}}",
+    channel = "system",
+  }
+}
+// ── Application Event Log ──────────────────────────────────────────
+loki.source.windowsevent "application" {
+  eventlog_name = "Application"
+  forward_to    = [loki.write.default.receiver]
+
+  labels = {
+    job     = "windows_eventlog",
+    host    = "{{ agent_name | default('ansible_host')}}",
+    channel = "application",
+  }
+}

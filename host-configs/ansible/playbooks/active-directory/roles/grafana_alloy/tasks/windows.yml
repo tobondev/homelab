@@ -1,0 +1,43 @@
+- name: Query Alloy Service
+  ansible.windows.win_service_info:
+    name: "Alloy"
+  register: alloy_service_info
+
+- name: Install Conditionally
+  when:  "not alloy_service_info.exists or alloy_service_info.services[0].state != 'started'"
+  block:
+    - name: Windows | Ensure Alloy download directory exists
+      ansible.windows.win_file:
+        path: "{{ alloy_win_package_download_path }}"
+        state: directory
+
+    - name: Windows | Download Alloy installer
+      ansible.windows.win_get_url:
+        url: "{{ alloy_windows }}"
+        dest: "{{ alloy_win_package_download_path }}\\{{ alloy_package_name }}.exe"
+
+    - name: Windows | Install Alloy
+      ansible.windows.win_package:
+        path: "{{ alloy_win_package_download_path }}\\{{ alloy_package_name }}.exe"
+        arguments: '/S /USERNAME="{{ alloy_user }}"'
+        state: present
+
+    - name: Windows | Stop Alloy service (if already running)
+      ansible.windows.win_service:
+        name: "Alloy"
+        state: stopped
+
+    - name: Set Alloy Configuration
+      template:
+        src: windows_alloy_config.j2
+        dest: "{{ alloy_config_path }}"
+
+    - name: Windows | Start Alloy service
+      ansible.windows.win_service:
+        name: "Alloy"
+        state: started
+
+    - name: Windows | Delete Alloy download directory
+      ansible.windows.win_file:
+        path: "{{ alloy_win_package_download_path }}"
+        state: absent

@@ -1,0 +1,14 @@
+alloy_package_download_path: "/tmp/alloy"
+alloy_win_package_download_path: "C:\\Temp\\alloy"
+alloy_package_name: "alloy-installer-windows-amd64.exe "
+alloy_user: "LocalSystem"
+alloy_windows: "https://github.com/grafana/alloy/releases/download/v1.18.0/{{ alloy_package_name }}"
+alloy_version: "1.18.0"
+org_ou: "OU=ORG"
+infra_ou: "OU=Infrastructure"
+linux_ou: "OU=Linux"
+windows_ou: "OU=Windows"
+alloy_service_info:
+wazuh_service_info:
+schema_active_directory_download_path: "C:\\Temp\\sudo_schema"
+sudo_schema_url: "https://raw.githubusercontent.com/lbt/sudo/refs/heads/master/doc/schema.ActiveDirectory"

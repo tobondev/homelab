@@ -21,22 +21,43 @@ try {
     if (Test-Path $errorLog) { Remove-Item $errorLog -Force }
     $data = Get-Content $JsonPath -Raw | ConvertFrom-Json
 
-        $baseDN = "DC=tobon,DC=dev"
-        $groupsOu = "OU=_GROUPS,$baseDN"
+        $baseDN = "DC=TOBON,DC=DEV"
+        $orgOU = "OU=ORG,$baseDN"
+        $groupsOU = "OU=GROUPS,$orgOU"
+        $deptOU = "OU=DEPARTMENTS,$orgOU"
+        $serviceOU = "OU=_SERVICE,$orgOU"
 
-        # 1. Ensure Groups OU exists
+        # 1. Ensure the ORG, Department and Group OUs exists
+        if (-not (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$orgOU'" -ErrorAction SilentlyContinue)) {
+            New-ADOrganizationalUnit -Name "ORG" -Path $baseDN -ProtectedFromAccidentalDeletion $false
+            Write-Host "Created Root OU: ORG" -ForegroundColor Cyan
+        }
         if (-not (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$groupsOu'" -ErrorAction SilentlyContinue)) {
-            New-ADOrganizationalUnit -Name "_GROUPS" -Path $baseDN -ProtectedFromAccidentalDeletion $false
-            Write-Host "Created Flat OU: _GROUPS" -ForegroundColor Cyan
+            New-ADOrganizationalUnit -Name "GROUPS" -Path $orgOU -ProtectedFromAccidentalDeletion $false
+            Write-Host "Created Nested OU: GROUPS" -ForegroundColor Cyan
+        }
+        if (-not (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$deptOU'" -ErrorAction SilentlyContinue)) {
+            New-ADOrganizationalUnit -Name "DEPARTMENTS" -Path $orgOU -ProtectedFromAccidentalDeletion $false
+            Write-Host "Created Nested OU: DEPARTMENTS" -ForegroundColor Cyan
+        }
+        if (-not (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$serviceOU'" -ErrorAction SilentlyContinue)) {
+            New-ADOrganizationalUnit -Name "_SERVICE" -Path $orgOU -ProtectedFromAccidentalDeletion $false
+            Write-Host "Created Flat OU: _SERVICE" -ForegroundColor Cyan
         }
 
-        # 2. Dynamically Ensure Flat Department OUs exist (including _SERVICE)
+        # 2. Dynamically Ensure Nested Department OUs exist (including _SERVICE)
         $departments = $data.users | Where-Object { $_.department } | Select-Object -ExpandProperty department -Unique
         foreach ($dept in $departments) {
-            $deptOuPath = "OU=$dept,$baseDN"
+            if ( $dept -eq "_SERVICE") {
+                $parentOuPath = "$orgOU"
+                $deptOuPath = "OU=$dept,$orgOU"
+            } else {
+                $parentOuPath = "$deptOU"
+                $deptOuPath = "OU=$dept,$deptOU"
+            }
             if (-not (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$deptOuPath'" -ErrorAction SilentlyContinue)) {
-                New-ADOrganizationalUnit -Name $dept -Path $baseDN -ProtectedFromAccidentalDeletion $false
-                Write-Host "Created Flat OU: $dept" -ForegroundColor Cyan
+                New-ADOrganizationalUnit -Name $dept -Path $parentOuPath -ProtectedFromAccidentalDeletion $false
+                Write-Host "Created Nested OU: $dept" -ForegroundColor Cyan
             }
         }
 
@@ -59,9 +80,16 @@ try {
                 Write-Host "Skipped: $samAccountName (Already exists)" -ForegroundColor DarkGray
                 continue
             }
-
-            # Route the user to their specific Department OU, fallback to the root _USERS OU if blank
-            $targetOu = if ($user.department) { "OU=$($user.department),$baseDN" } else { "CN=Users,$baseDN" }
+            # Route the user to their specific Department OU, evaluating for _SERVICE exception, fallback to root if blank
+                        $targetOu = if ($user.department) {
+                            if ($user.department -eq '_SERVICE') {
+                                "OU=$($user.department),$orgOU"
+                            } else {
+                                "OU=$($user.department),$deptOU"
+                            }
+                        } else {
+                            "CN=Users,$baseDN"
+                        }
             $uniqueHumanName = "$($user.DisplayName) ($samAccountName)"
             $splat = @{
                 Name                  = $uniqueHumanName
@@ -125,6 +153,7 @@ finally{
     Set-ADDefaultDomainPasswordPolicy -Identity $domain `
         -ComplexityEnabled $originalPolicy.ComplexityEnabled `
         -MinPasswordLength $originalPolicy.MinPasswordLength
-
+    if (-not (Test-Path ".\Artifacts")) { New-Item -ItemType Directory -Path ".\Artifacts" | Out-Null }
+    $departments | Out-File -FilePath ".\Artifacts\fake_ous_artifact.txt" -Force
     Write-Host "Password Policy restored. Lab environment staging complete." -ForegroundColor Green
 }

@@ -1,0 +1,29 @@
+---
+# Load the nested tree from the vars file
+- name: Load AD OU Tree Variables
+  ansible.builtin.include_vars:
+    file: ../vars/ou_structure.yml
+
+# Use Jinja2 to flatten the nested tree into a list of {name, path} JSON
+- name: Flatten nested OU tree in-memory
+  ansible.builtin.set_fact:
+    flat_ou_list: >-
+      {%- set results = [] -%}
+      {%- macro walk_tree(nodes, current_path) -%}
+        {%- for node in nodes -%}
+          {%- set _ = results.append({'name': node.name, 'path': current_path}) -%}
+          {%- if node.children is defined -%}
+            {%- set _ = walk_tree(node.children, 'OU=' ~ node.name ~ ',' ~ current_path) -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endmacro -%}
+      {%- set _ = walk_tree(ad_ou_tree, domain_structure) -%}
+      {{ results | to_json }}
+
+# Iterate through the JSON list
+- name: Ensure Active Directory OU Structure Exists
+  microsoft.ad.ou:
+    name: "{{ item.name }}"
+    path: "{{ item.path }}"
+    state: present
+  loop: "{{ flat_ou_list | from_json }}"

@@ -96,26 +96,47 @@ Integration of the local AD domain with a Microsoft 365 Business Premium 30-day 
 
 ## Stage 4: Cross-OS Domain Integration
 
-**Goal:** Enforce centralized identity across operating systems by joining a `RHEL` endpoint to the Windows domain.
-**Status:** Planned
+ "**Goal:** Enforce centralized identity, authentication and access management across operating systems by joining a `RHEL` endpoint to the Windows domain.
+
+**Status:** Completed
+
 
 ### Architecture
 
+
 A `RHEL` VM is deployed alongside the Windows client on the HybridAD `VLAN`. The integration toolchain operates in dependency order:
 
+
 - `realmd` handles domain discovery and the initial join operation
+
 - `sssd` maintains ongoing authentication and caches credentials for offline resilience
+
 - `krb5` handles `Kerberos` ticket operations
+
 - `PAM` enforces session control and access policy at login
+
 
 Each layer has its own log surface, and each is exercised by the fault injection scenarios defined in Stage 5.
 
+
 ### Objectives
 
+
 - Successful `SSH` authentication into the `RHEL` endpoint using a `Windows AD` credential.
+
 - Validated `Kerberos TGT` generation (`klist`) for the domain user post-login.
-- Sudo access governed by AD group membership via `SSSD`'s simple_allow_groups or ad_access_filter — not local /etc/sudoers entries.
+
+- ~~Sudo access governed by AD group membership via `SSSD`'s simple_allow_groups or ad_access_filter — not local /etc/sudoers entries.~~ [SUPERSEDED]
+
+- Govern Sudo Access in Domain-Joined Systems using both industry standards:
+
+  - AD Group Membership mapped to a custom entry in `/etc/sudoers.d`, orchestrated using Ansible.
+
+  - Extended AD Schema using `ldfi` to add a`sudoers` OU containing the `sudoRole`, `sudoCommand`, `sudoHost` and `sudoUser` attributes.
+
 - Document the full join procedure as a runbook with exact terminal output captured via `Journal Helper`.
+
+- Create Domain-Join Ansible Playbook for both standards.
 
 ---
 

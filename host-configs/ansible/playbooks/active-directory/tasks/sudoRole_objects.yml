@@ -1,0 +1,37 @@
+- name: Ensure sudoRole objects exist in Active Directory
+  ansible.windows.win_powershell:
+    script: |
+      param(
+          [String]$RoleName,
+          [String]$SudoUser,
+          [String]$SudoHost,
+          [String]$SudoCommand,
+          [String]$SudoRunAsUser
+      )
+      # Ensure the Sudoers OU exists
+      $existingOU = Get-ADObject -Filter {Name -eq 'sudoers'} -SearchBase "{{ domain_structure }}" -ErrorAction SilentlyContinue
+      if (-not $existingOU) {New-ADOrganizationalUnit -Name "sudoers" -Path "{{ domain_structure }}"}
+      # Check if the object already exists to maintain idempotency
+      $existingRole = Get-ADObject -Filter {Name -eq '$RoleName' -and ObjectClass -eq 'sudoRole'} -SearchBase "{{ sudoers_path }}" -ErrorAction SilentlyContinue
+
+      if (-not $existingRole) {
+          $attributes = @{
+              'sudoUser'      = $SudoUser
+              'sudoHost'      = $SudoHost
+              'sudoCommand'   = $SudoCommand
+              'sudoRunAsUser' = $SudoRunAsUser
+          }
+          New-ADObject -Type sudoRole -Name $RoleName -Path "{{ sudo_ou }}" -OtherAttributes $attributes
+          $true # Signal to Ansible that a change was made
+      } else {
+          $false # Signal to Ansible that no change was made
+      }
+    parameters:
+      RoleName: "{{ item.name }}"
+      SudoUser: "{{ item.user }}"
+      SudoHost: "{{ item.host }}"
+      SudoCommand: "{{ item.command }}"
+      SudoRunAsUser: "{{ item.runas }}"
+  loop: "{{ ad_sudo_roles }}"
+  register: role_creation
+  changed_when: role_creation.output[0] == true

@@ -1,0 +1,9 @@
+# ==============================================================================
+# Managed by Ansible: {{ sudo_governance | upper }} Governance Mode
+# ==============================================================================
+
+{% for role in ad_sudo_roles %}
+# Role: {{ role.name }}
+{{ role.user }}@{{ domain_name }} {{ role.host | replace("." ~ domain_name, '') }} = ({{ role.runas | default('ALL') }}) {{ role.command }}
+
+{% endfor %}

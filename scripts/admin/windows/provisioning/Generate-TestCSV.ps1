@@ -22,19 +22,19 @@ $departments = @(
     @{
         Dept   = "IT Operations"
         Titles = @("Systems Administrator", "Network Engineer", "Helpdesk Technician")
-        Groups = @("Domain Admins", "Employees")
+        Groups = @("ITOperations", "Employees")
     },
 
     @{
         Dept   = "Information Security"
         Titles = @("Cybersecurity Analyst", "Security Engineer", "IAM Specialist")
-        Groups = @("InfoSec", "Employees")
+        Groups = @("LinuxAdmins","LinuxUsers","InfoSec", "Employees")
     },
 
     @{
         Dept   = "Software Engineering"
         Titles = @("Backend Developer", "Frontend Developer", "Full Stack Engineer")
-        Groups = @("Engineering", "Employees")
+        Groups = @("LinuxAdmins","LinuxUsers","Engineering", "Employees")
     },
 
     @{
@@ -46,7 +46,7 @@ $departments = @(
     @{
         Dept   = "DevOps"
         Titles = @("Site Reliability Engineer", "Release Manager", "Cloud Architect")
-        Groups = @("DevOps", "Employees")
+        Groups = @("SystemEngineers","LinuxUsers","DevOps", "Employees")
     },
 
     # Finance & Accounting
@@ -78,7 +78,7 @@ $departments = @(
     # Marketing & Communications
     @{
         Dept   = "Marketing"
-        Titles = @("Marketing Manager", "SEO Specialist", "Growth Hacker")
+        Titles = @("Marketing Manager", "SEO Specialist", "Content Strategist")
         Groups = @("Marketing", "Employees")
     },
 
@@ -91,7 +91,7 @@ $departments = @(
     # Legal & HR
     @{
         Dept   = "HR"
-        Titles = @("HR Generalist", "Recruiter", "Benefits Coordinator")
+        Titles = @("HR Generalist", "Recruiter", "Benefits Coordinator", "Hiring Manager")
         Groups = @("HR", "Employees")
     },
 
@@ -128,6 +128,20 @@ $departments = @(
     }
 )
 
+# Special Group mapping based on specific titles
+$specialGroupsByTitle = @{
+    "Systems Administrator"          = @("LinuxAdmins", "Maintenance")
+    "Security Engineer"              = @("SecurityEngineers", "Linux Admins")
+    "Network Engineer"               = @("NetworkEngineers", "LinuxUsers")
+    "Video Editor"                   = @("MediaNetworkShare")
+    "Chief Technology Officer"       = @("AuditAccess")
+    "Frontend Developer"             = @("WebServerAdmins")
+    "Support Specialist"             = @("Tier1Support")
+    "Site Reliability Engineer"      = @("Linux Admins")
+    "Full Stack Engineer"            = @("LinuxAdmins","WebServerAdmins")
+    "Cloud Architect"                = @("CloudAdmins")
+    "Payroll Specialist"             = @("PayrollManagers")
+}
 
 Write-Host "Generating 1,000 AD users for load testing..." -ForegroundColor Cyan
 
@@ -139,9 +153,17 @@ $users = for ($i = 1; $i -le 997; $i++) {
     $dept    = $deptObj.Dept
     $title   = $deptObj.Titles | Get-Random
 
-    # Start with the base department groups
-    $realGroups  = $deptObj.Groups -join ';'
-    $groups = $realGroups + ";FakeAccounts"
+    # Start with the base department groups and default flags
+    $realGroupsList = [System.Collections.Generic.List[string]]::new()
+    $realGroupsList.AddRange([string[]]$deptObj.Groups)
+
+    # CHECK: Does this title belong to the special group pool?
+    if ($specialGroupsByTitle.ContainsKey($title)) {
+        $realGroupsList.AddRange([string[]]$specialGroupsByTitle[$title])
+    }
+
+    # Build the final semicolon-delimited groups string
+    $groups = ($realGroupsList -join ';') + ";FakeAccounts"
 
     # Introduce a 10% chance to poison the account with the InvalidPassword group
     if ((Get-Random -Min 1 -Max 101) -le 10) {

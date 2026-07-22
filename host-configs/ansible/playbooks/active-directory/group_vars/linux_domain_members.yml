@@ -1,0 +1,6 @@
+infra_ou: "OU=Infrastructure"
+os_ou: "OU=Linux"
+agent_groups:
+    - "Linux"
+    - "DomainMembers"
+    - "Agents"

@@ -1,0 +1,268 @@
+---
+# ==============================================================================
+# Domain Join Playbook: Host-Agnostic Ansible Playbook
+# ==============================================================================
+# Context: Hybrid Identity Infrastructure Project (tobon.dev)
+# Target:  Idempotent Domain-Join of Windows and Linux hosts at scale
+# This playbook utilizes the "sudo_governance" variable to branch between
+# two different approaches to sudo governance:
+#    - Host-level using sudoers.d
+#    - Extended Active Directory Schema with SSSD
+# The sudo_governance variable is set in the secrets file, but can be overridden
+# in order to validate both execution modes.
+# Methods:
+#         Extended AD Schema adding LDAP Sudoers fields: -e "sudo_governance=schema"
+#         Use Sudoers File to Grant Sudo rights by group: -e "sudo_governance=sudoers"
+# Execution:
+#   Join Domain:
+#     Use the "join" tag to join AND verify.
+#      Schema_Extended Run: ansible-playbook domain-join.yml -e "sudo_governance=schema" --tags=join
+#      Sudoers_Based Run: ansible-playbook domain-join.yml -e "sudo_governance=sudoers" --tags=join
+#     Use the "no-verify" tag to join only
+#      Schema_Extended Run: ansible-playbook domain-join.yml --tags=no-verify
+#      Sudoers_Based Run: ansible-playbook domain-join.yml --tags=no-verify
+#   Verify Domain Join:
+#     Use the "verify" tag to verify ONLY.
+#     Verify: ansible-playbook domain-join.yml --tags=verify
+# By default, this playbook will generate an artifact to validate domain join per host.
+# To bypass this feature, run the playbook using the "--tags=norender"
+# ==============================================================================
+- name: Bootstrap and Provision Domain Members
+  hosts: domain
+  vars:
+    secrets_file: "./secrets.sops.yml"
+  become: "{{ not_become | default('true') }}"
+  become_method: "{{ windows_become | default('ansible.builtin.sudo') }}"
+  become_user: "{{ windows_become_user | default('root') }}"
+  pre_tasks:
+    # -----------------------------------------------------------------------
+    # Load SOPS Encrypted Variables
+    # -----------------------------------------------------------------------
+    - name: Load SOPS-Encrypted Variables
+      community.sops.load_vars:
+        file: "{{ secrets_file }}"
+      tags: [always]
+    - include_vars: "vars/main.yml"
+    - include_vars: "vars/sudo_roles.yml"
+    - include_vars: "vars/ou_structure.yml"
+    - name: Non-DC Hostname Check
+      when: "computer_role != 'domain_controller'"
+      block:
+        # -----------------------------------------------------------------------
+        # Derive hostname from inventory name if compliant
+        # -----------------------------------------------------------------------
+        - name: Evaluate Current Inventory Hostname
+          set_fact:
+            is_compliant: "{{ inventory_hostname is match('^[a-z]+_[a-z]+_' ~ (ansible_facts['os_family'] | lower) ~ '_' ~ computer_role ~ '$') }}"
+        # -----------------------------------------------------------------------
+        # Derive evaluate if hostname already compliant
+        # -----------------------------------------------------------------------
+        - name: Evaluate Current Hostname
+          when: not is_compliant
+          set_fact:
+            already_compliant: "{{ inventory_hostname is match('^[a-z]+-[a-z]+-' ~ (ansible_facts['os_family'] | lower) ~ '-' ~ computer_role ~ '$') }}"
+    - name: DC Hostname Check
+      when: "computer_role == 'domain_controller'"
+      block:
+        # -----------------------------------------------------------------------
+        # Derive hostname from inventory name if compliant
+        # -----------------------------------------------------------------------
+        - name: Evaluate Current Inventory Hostname
+          set_fact:
+            is_compliant: "{{ inventory_hostname is match('^[a-z]+_(dc)$') }}"
+        # -----------------------------------------------------------------------
+        # Derive evaluate if hostname already compliant
+        # -----------------------------------------------------------------------
+        - name: Evaluate Current Hostname
+          when: not is_compliant
+          set_fact:
+            already_compliant: "{{ ansible_facts['hostname'] is match('^[a-z]+-(dc)$') }}"
+    # -----------------------------------------------------------------------
+    # Store Results
+    # -----------------------------------------------------------------------
+    - name: Define agent_name from inventory_hostname
+      when: "is_compliant"
+      set_fact:
+        agent_name: "{{ inventory_hostname | replace('_', '-') }}"
+    - name: Define agent_name from ansible_hostname
+      when: "already_compliant is defined and already_compliant"
+      set_fact:
+        agent_name: "{{ ansible_facts['hostname'] }}"
+    # -----------------------------------------------------------------------
+    # Active Directory Checks
+    # -----------------------------------------------------------------------
+    - name: Active Directory Structure Checks
+      when:
+        - "'bypassadcheck' not in ansible_run_tags"
+        - "'provision_dc' not in ansible_run_tags"
+        - "'create_domain' not in ansible_run_tags"
+      block:
+        # -----------------------------------------------------------------------
+        # Ensure Schema is extended import_tasks:
+        # -----------------------------------------------------------------------
+        - name: Check sudo_governance and add extend schema if needed
+          when: "sudo_governance == 'schema'"
+          delegate_to: "{{ groups['domain_controllers'][0] }}"
+          run_once: true
+          become: false
+          import_tasks: "./tasks/extend_schema.yml"
+        # -----------------------------------------------------------------------
+        # Ensure sudoRoles exist in AD tree import_tasks:
+        # -----------------------------------------------------------------------
+        - name: Check sudo_governance and add sudoRoles if needed
+          when: "sudo_governance == 'schema'"
+          delegate_to: "{{ groups['domain_controllers'][0] }}"
+          run_once: true
+          become: false
+          import_tasks: "./tasks/sudoRole_objects.yml"
+        # -----------------------------------------------------------------------
+        # Ensure ORG OU hierarchy exist in AD tree
+        # -----------------------------------------------------------------------
+        - name: Enforce OU tree and create sub-units
+          delegate_to: "{{ groups['domain_controllers'][0] }}"
+          run_once: true
+          become: false
+          import_tasks: "./tasks/infra_OU_tree.yml"
+
+    - name : Register Hostname
+      set_fact:
+        current_hostname: "{{ ansible_facts['hostname'] }}"
+    - name: Debug Registered Hostname
+      debug:
+        var: current_hostname
+
+    # -----------------------------------------------------------------------
+    # Linux Domain Member Tasks
+    # -----------------------------------------------------------------------
+    - name: Linux Tasks
+      when: ansible_facts['os_family'] != 'Windows'
+      block:
+      # -----------------------------------------------------------------------
+      # Check if Hostname Complies with Standard, otherwise enforce.
+      # -----------------------------------------------------------------------\
+        - name: Set Hostname if not Compliant
+          when: "already_compliant is not defined or not already_compliant"
+          block:
+            - name: Generate hostname
+              when: "is_compliant is not defined or not is_compliant"
+              block:
+              - name: Generate Random Word
+                when: "agent_name is not defined or not agent_name"
+                set_fact:
+                  agent_name: "{{ lookup('community.general.random_words', numwords=2,delimiter='-',case='lower') }}-{{ ansible_facts['os_family'] | lower }}-{{ computer_role }}"
+              - name: Change hostname
+                ansible.builtin.hostname:
+                  name: "{{ agent_name }}"
+              - ansible.builtin.lineinfile:
+                  path: /etc/hosts
+                  regexp: '.*{{ current_hostname }}$'
+                  line: '127.0.1.1  {{ agent_name }}'
+          tags: [always]
+    # -----------------------------------------------------------------------
+    # Windows Domain Member Tasks
+    # -----------------------------------------------------------------------
+    - name: Windows Tasks
+      when: "ansible_facts['os_family'] == 'Windows'"
+      block:
+        - name: Not Already Compliant
+          when: "already_compliant is not defined or not already_compliant"
+          block:
+          - name: Generate hostname
+            when: "is_compliant is not defined or not is_compliant"
+            block:
+              - name: Generate Random Word
+                when: "computer_role == 'workstation'"
+                set_fact:
+                  agent_name: "{{ lookup('community.general.random_words', numwords=2,delimiter='-',case='lower') }}-{{ ansible_facts['os_family'] | lower }}-{{ computer_role }}"
+              - name: Generate Random Word
+                when: "computer_role == 'domain_controller'"
+                set_fact:
+                  agent_name: "{{ lookup('community.general.random_words', numwords=1,delimiter='-',case='lower') }}-dc"
+          - name: Change hostname to match convention.
+            ansible.windows.win_hostname:
+              name: "{{ agent_name }}"
+            register: windows_hostname
+          - name: Print Result
+            debug:
+              var: agent_name
+          - name: Reboot host if hostname change requires it
+            ansible.windows.win_reboot:
+            when: " windows_hostname.reboot_required is defined and windows_hostname.reboot_required"
+
+      tags: [always]
+
+
+  tags: [always]
+
+  roles:
+    #- role: grafana_alloy
+    #- role: wazuh_agent
+    - role: domain_join
+    #- role: provision_dc
+  handlers:
+    - import_tasks: "./handlers/main.yml"
+  post_tasks:
+    - name: Ensure Wazuh Agent Version is populated
+      when: "'join-only' not in ansible_run_tags"
+      block:
+        - name: Windows Wazuh Agent Version
+          when: wazuh_agent_version | d("") | length == 0 and ansible_facts['os_family'] == 'Windows'
+          community.windows.win_file_version:
+            path: "{{ install_dir_x86 }}\\agent.exe"
+        - name: Linux Wazuh Agent Version
+          when: wazuh_agent_version | d("") | length == 0 and ansible_facts['os_family'] != 'Windows'
+          ansible.builtin.package_facts:
+            manager: auto
+        - name: Print the package facts
+          when: wazuh_agent_version | d("") | length == 0 and ansible_facts['os_family'] != 'Windows'
+          ansible.builtin.debug:
+            var: ansible_facts['packages'].wazuh-agent[0].version
+        - name: Set Wazuh Agent Version Variable
+          when: wazuh_agent_version | d("") | length == 0 and ansible_facts['os_family'] != 'Windows'
+          set_fact:
+            wazuh_agent_version: "{{ ansible_facts['packages'].wazuh-agent[0].version }}"
+    - name: debug wazuh
+      when: "ansible_facts['os_family'] == 'Windows'"
+      debug:
+        msg:
+          - "Wazuh State: {{ wazuh_service_info.services[0].state | default('Not Running') }}"
+          - "Alloy State: {{ alloy_service_info.services[0].state | default('Not Running') }}"
+    - name: Debug Hostname
+      ansible.builtin.debug:
+        var: current_hostname
+    - name: Update Inventory (Localhost)
+      when: "not is_compliant"
+      delegate_to: localhost
+      become: false
+      block:
+        - name: Format New Inventory Name
+          set_fact:
+            new_inventory_name: "{{ agent_name | replace('-', '_') }}"
+
+        - name: Update Static Inventory File
+          ansible.builtin.replace:
+            path: "./hosts.yml"
+            regexp: "{{ inventory_hostname }}"
+            replace: "{{ new_inventory_name }}"
+
+        - name: Check for existing SOPS file
+          ansible.builtin.stat:
+            path: "./host_vars/{{ inventory_hostname }}.sops.yml"
+          register: sops_file
+        - name: Rename SOPS Encrypted Variables File
+          when: sops_file.stat.exists
+          ansible.builtin.command:
+            cmd: "mv ./host_vars/{{ inventory_hostname }}.sops.yml ./host_vars/{{ new_inventory_name }}.sops.yml"
+
+        - name: Print State Sync Result
+          ansible.builtin.debug:
+            msg: "Inventory updated. Node {{ inventory_hostname }} has been renamed to {{ new_inventory_name }}."
+    - name: render_template
+      when:
+        - "'norender' not in ansible_run_tags"
+      template:
+        src: ./templates/domain_join.j2
+        dest: "{{ artifacts_dir }}/{{ agent_name | default(inventory_hostname) }}-{{ ansible_date_time['date'] }}-{{ ansible_date_time['time'] }}-domain-join-report.md"
+      delegate_to: localhost
+      become: false
+      tags: [always]

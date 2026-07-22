@@ -1,0 +1,36 @@
+---
+# ==============================================================================
+# Kerberos Auth Validation Playbook: Host-Agnostic Ansible Playbook
+# ==============================================================================
+#
+# Context: Hybrid Identity Infrastructure Project (tobon.dev)
+# Target:  Validate Kerberos Authentication Tickets Across Hosts
+#
+# Execution:
+#  ansible-playbook validate_kerberos_auth.yml.
+# By default, this playbook will generate an artifact to validate authentication per host.
+# To bypass this feature, run the playbook using the "--tags=norender"
+# ==============================================================================
+- name: Validate Kerberos Authentication for Domain Members
+  hosts: domain
+  vars:
+    secrets_file: "./secrets.sops.yml"
+  pre_tasks:
+    # -----------------------------------------------------------------------
+    # Load SOPS Encrypted Variables
+    # -----------------------------------------------------------------------
+    - name: Load SOPS-Encrypted Variables
+      community.sops.load_vars:
+        file: "{{ secrets_file }}"
+      tags: [always]
+    - include_vars: "vars/main.yml"
+   # - name: Set Ansible user
+   #   when: "ansible_facts['os_family'] == 'Windows'"
+   #   set_fact:
+   #     ansible_user: "{{ domain_admin }}"
+  # -----------------------------------------------------------------------
+  # Linux Domain Member Tasks
+  # -----------------------------------------------------------------------
+  tasks:
+    - name: Import Tasks
+      import_tasks: "./tasks/klist_validation.yml"

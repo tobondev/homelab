@@ -1,0 +1,18 @@
+wazuh_managers:
+  - address: "{{ wazuh_manager }}"
+    port: "{{ wazuh_port }}"
+    protocol: tcp
+    api_port: 55000
+    api_proto: 'http'
+    api_user: 'ansible'
+    register: yes
+wazuh_agent_authd:
+  registration_address: "{{ wazuh_manager }}"
+  enable: true
+  agent_name: " {{ agent_name }}"
+  groups: "{{ agent_groups }}"
+  port: "{{ wazuh_registration_port }}"
+  authd_pass: ''
+  ssl_agent_ca: null
+  ssl_auto_negotiate: 'no'
+wazuh_manager_address: "{{ wazuh_manager }}"

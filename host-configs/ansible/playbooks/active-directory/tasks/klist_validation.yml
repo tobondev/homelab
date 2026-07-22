@@ -1,0 +1,53 @@
+---
+
+# -----------------------------------------------------------------------
+# Linux Domain Member Tasks
+# -----------------------------------------------------------------------
+- name: Linux Tasks
+  when: ansible_facts['os_family'] != 'Windows'
+  block:
+  # -----------------------------------------------------------------------
+  # Run kinit and klist and capture output
+  # -----------------------------------------------------------------------\
+    - name: Run kinit for domain user
+      ansible.builtin.shell:
+        cmd: "echo '{{ klist_password }}' | kinit {{ klist_user }}@{{ domain_name | upper }}"
+      no_log: true
+      become: false
+      ignore_errors: true
+      register: kinit_output
+    - name: Run Klist to get ticket output
+      become: false
+      ansible.builtin.shell:
+        cmd: klist
+      ignore_errors: true
+      register: klist_linux
+    - name: Get domain user identity
+      ansible.builtin.shell:
+        cmd: sudo -u "{{ klist_user }}@{{ domain_name | upper }}" id
+      become: false
+      ignore_errors: true
+      register: id_output
+# -----------------------------------------------------------------------
+# Windows Domain Member Tasks
+# -----------------------------------------------------------------------
+- name: Run klist on Windows
+  when: ansible_facts['os_family'] == 'Windows'
+  ansible.windows.win_shell: |
+    $password = ConvertTo-SecureString "{{ klist_password }}" -AsPlainText -Force
+    $credential = New-Object System.Management.Automation.PSCredential ("{{ domain_netbios }}\{{ klist_user }}", $password)
+    Start-Process klist -Credential $credential -Wait -NoNewWindow
+  ignore_errors: true
+  register: klist_windows
+# -----------------------------------------------------------------------
+# Render Template
+# -----------------------------------------------------------------------
+- name: render_template
+  when:
+    - "'norender' not in ansible_run_tags"
+  template:
+    src: ./templates/klist_validation.j2
+    dest: "{{ artifacts_dir }}/{{ agent_name | default(inventory_hostname) }}-{{ ansible_date_time['date'] }}-{{ ansible_date_time['time'] }}-klist-validation-report.md"
+  delegate_to: localhost
+  become: false
+  tags: [always]
