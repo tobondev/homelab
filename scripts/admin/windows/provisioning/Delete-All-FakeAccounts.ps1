@@ -1,7 +1,7 @@
 # Delete-All-FakeAccounts.ps1
 
 $targetGroup = "FakeAccounts"
-$baseDN = "DC=tobon,DC=dev"
+$baseDN = "OU=GROUPS,OU=ORG,DC=tobon,DC=dev"
 
 Write-Host "Initiating teardown based on membership in: $targetGroup" -ForegroundColor Yellow
 
@@ -17,17 +17,28 @@ if (Get-ADGroup -Filter "Name -eq '$targetGroup'" -ErrorAction SilentlyContinue)
     }
 }
 
-# 2. Destroy the Flat Organizational Units
-$labOUs = @(
-    "_GROUPS", "IT Operations", "Information Security", "Software Engineering",
-    "QA and Testing", "DevOps", "Finance", "Accounting", "Sales",
-    "Customer Success", "Marketing", "Communications", "HR", "Legal",
-    "Facilities", "Media Production", "Event Operations", "Executive", "_SERVICE"
-)
+#Read  Organizational Units from the artifact
+$artifactPath = ".\Artifacts\fake_ous_artifact.txt"
+if (Test-Path $artifactPath) {
+    $labOUs = Get-Content $artifactPath
+} else {
+    Write-Host "Artifact file not found. Skipping OU teardown." -ForegroundColor Red
+    $labOUs = @()
+}
 
+# Destroy
 Write-Host "`n[--- Destroying Target OUs ---]" -ForegroundColor Cyan
+
+$orgOU = "OU=ORG,DC=tobon,DC=dev"
+$deptOU = "OU=DEPARTMENTS,$orgOU"
+
 foreach ($ouName in $labOUs) {
-    $ouPath = "OU=$ouName,$baseDN"
+    # Route the deletion path based on the _SERVICE exception
+    if ($ouName -eq '_SERVICE') {
+        $ouPath = "OU=$ouName,$orgOU"
+    } else {
+        $ouPath = "OU=$ouName,$deptOU"
+    }
 
     if (Get-ADOrganizationalUnit -Filter "DistinguishedName -eq '$ouPath'" -ErrorAction SilentlyContinue) {
         Set-ADOrganizationalUnit -Identity $ouPath -ProtectedFromAccidentalDeletion $false

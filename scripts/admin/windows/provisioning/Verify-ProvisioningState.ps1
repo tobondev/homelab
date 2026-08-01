@@ -26,22 +26,32 @@ function Test-Result {
 }
 
 # 1. Verify expected Department OUs exist and have users
-$expectedOUs = @(
-    "IT Operations", "Information Security", "Software Engineering",
-    "QA and Testing", "DevOps", "Finance", "Accounting", "Sales",
-    "Customer Success", "Marketing", "Communications", "HR", "Legal",
-    "Facilities", "Media Production", "Event Operations", "Executive",
-    "_SERVICE"
-)
+$artifactPath = ".\Artifacts\fake_ous_artifact.txt"
+if (Test-Path $artifactPath) {
+    $expectedOUs = Get-Content $artifactPath
+} else {
+    Write-Host "Artifact file not found. Cannot Verify OU Creation." -ForegroundColor Red
+    $expectedOUs = @()
+}
+
 
 Write-Host "--- Checking OU Population ---" -ForegroundColor Yellow
+
+$orgOU = "OU=ORG,DC=tobon,DC=dev"
+$deptOU = "OU=DEPARTMENTS,$orgOU"
+
 foreach ($ou in $expectedOUs) {
-    $userCount = (Get-ADUser -Filter * -SearchBase "OU=$ou,DC=tobon,DC=dev" -ErrorAction SilentlyContinue).Count
+    # Dynamically build the SearchBase depending on whether it is a service account or standard department
     if ($ou -eq "_SERVICE") {
+        $searchBase = "OU=$ou,$orgOU"
+        $userCount = (Get-ADUser -Filter * -SearchBase $searchBase -ErrorAction SilentlyContinue).Count
         $pass = Test-Result -Condition ($userCount -eq 3) -TestName "OU '_SERVICE' contains exactly 3 service accounts (found $userCount)"
     } else {
+        $searchBase = "OU=$ou,$deptOU"
+        $userCount = (Get-ADUser -Filter * -SearchBase $searchBase -ErrorAction SilentlyContinue).Count
         $pass = Test-Result -Condition ($userCount -gt 0) -TestName "OU '$ou' has at least 1 user (found $userCount)"
     }
+
     if (-not $pass) { $allPassed = $false }
 }
 

@@ -1,0 +1,6 @@
+group_ou: "OU=Windows"
+os_ou: "OU=Windows"
+agent_groups:
+    - "Windows"
+    - "DomainMembers"
+    - "Agents"

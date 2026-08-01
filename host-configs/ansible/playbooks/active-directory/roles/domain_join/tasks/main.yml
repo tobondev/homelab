@@ -1,0 +1,29 @@
+- name: Set computer OU
+  when: "computer_role != 'domain_controller'"
+  set_fact:
+    domain_ou_path: "OU={{ computer_role | capitalize }}s,{{ os_ou }},{{ infra_ou }},{{ org_ou }},{{ domain_structure}}"
+- name: Set DC OU
+  when: "computer_role == 'domain_controller'"
+  set_fact:
+    domain_ou_path: "OU={{ computer_role | title | replace(' ', '_') }}s,{{ infra_ou }},{{ org_ou }},{{ domain_structure}}"
+- name: debug
+  debug:
+    var: domain_ou_path
+- name: Gather Linux Service Facts
+  when: "ansible_facts['os_family'] != 'Windows'"
+  ansible.builtin.service_facts:
+- name: Gather Windows Service Facts
+  when: "ansible_facts['os_family'] == 'Windows'"
+  ansible.windows.win_service_info:
+- name: Run Join
+  block:
+    - name: Linux Domain Join
+      when: "ansible_facts['os_family'] != 'Windows'"
+      import_tasks: linux_join.yml
+      notify:
+        - linux_services_status
+    - name: Windows Domain Join
+      when: "ansible_facts['os_family'] == 'Windows' and computer_role == 'workstation'"
+      import_tasks: windows_join.yml
+      notify:
+        - windows_services_status

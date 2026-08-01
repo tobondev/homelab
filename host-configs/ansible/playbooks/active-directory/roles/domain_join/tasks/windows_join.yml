@@ -1,0 +1,14 @@
+- name: Windows Computer Join Domain
+  microsoft.ad.membership:
+    dns_domain_name: "{{ domain_name }}"
+    hostname: "{{ agent_name | default(current_hostname)}}"
+    domain_admin_user: "{{ domain_admin }}@{{ domain_name }}"
+    domain_admin_password: "{{ domain_admin_password }}"
+    domain_ou_path: " {{ domain_ou_path }}"
+    state: domain
+  register: domain_state
+
+- name: Restart Windows Computer
+  when: domain_state.reboot_required
+  ansible.windows.win_reboot:
+      reboot_timeout: 3600

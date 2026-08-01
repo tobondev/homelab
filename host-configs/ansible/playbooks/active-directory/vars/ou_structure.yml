@@ -1,0 +1,15 @@
+---
+ad_ou_tree:
+  - name: ORG
+    children:
+      - name: Infrastructure
+        children:
+          - name: Domain_Controllers
+          - name: Linux
+            children:
+              - name: Workstations
+              - name: Servers
+          - name: Windows
+            children:
+              - name: Workstations
+              - name: Servers

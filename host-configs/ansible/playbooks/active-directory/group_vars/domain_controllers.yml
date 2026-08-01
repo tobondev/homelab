@@ -1,0 +1,6 @@
+become_method: runas
+os_ou: "OU=Domain_controllers"
+agent_groups:
+    - "DomainControllers"
+    - "Agents"
+    - "Windows"

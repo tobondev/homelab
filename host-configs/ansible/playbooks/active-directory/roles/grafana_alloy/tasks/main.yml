@@ -1,0 +1,10 @@
+---
+- name: Set Alloy Config based on OS
+  when: "ansible_facts['os_family'] != 'Windows'"
+  ansible.builtin.include_role:
+    name: grafana.grafana.alloy
+  vars:
+    alloy_config: "{{ lookup('template', './templates/linux_alloy_config.j2') }}"
+- name: Install Alloy on Windows Hosts
+  when: "ansible_facts['os_family'] == 'Windows'"
+  import_tasks: windows.yml

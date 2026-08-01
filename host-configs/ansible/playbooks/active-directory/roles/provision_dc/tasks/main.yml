@@ -1,0 +1,53 @@
+- name: Provision DC
+  when: "'provision_dc' in ansible_run_tags or 'create_domain' in ansible_run_tags"
+  #delegate_to: "{% if 'create_domain in ansible_run_tags %}{{ groups['domain_controllers'][0] }}{% else %}inventory_hostname{% endif %} }}"
+  become_method: runas
+  run_once: "{% if 'create_domain' in ansible_run_tags %}true{% else %}false{% endif %}"
+  block:
+    - name: Create new domain in a new forest on the target host and reboot
+      when: "'create_domain' in ansible_run_tags"
+      microsoft.ad.domain:
+        domain_mode: Win2025
+        dns_domain_name: "{{ domain_name }}"
+        safe_mode_password: "{{ offline_password }}"
+        replication_source_dc: "{{ groups['domain_controllers'][0] }}"
+        install_dns: true
+        create_dns_delegation: false
+        database_path: C:\Windows\NTDS
+        domain_netbios_name: "{{ domain_netbios }}"
+        forest_mode: Win2025
+        sysvol_path: C:\Windows\SYSVOL
+      register: domain_install
+    - name: Promote server with custom paths with manual reboot task
+      when: "'create_domain' not in ansible_run_tags"
+      microsoft.ad.domain_controller:
+        state: "{{ computer_role }}"
+        dns_domain_name: "{{ domain_name }}"
+        domain_admin_user: "{{ domain_admin }}@{{ domain_name }}"
+        domain_admin_password: "{{ domain_admin_password }}"
+        safe_mode_password: "{{ offline_password }}"
+        sysvol_path: C:\SYSVOL
+        database_path: C:\NTDS
+        domain_log_path: C:\NTDS
+      register: dc_promotion
+    - name: Reboot host if install requires it
+      ansible.windows.win_reboot:
+      when: "domain_install.reboot_required is defined and domain_install.reboot_required"
+    - name: Reboot host if install requires it
+      ansible.windows.win_reboot:
+      when: "dc_promotion.reboot_required is defined and dc_promotion.reboot_required"
+    - name: Create Domain Structure
+      when: "'create_domain' in ansible_run_tags"
+      import_tasks: "infra_OU_tree.yml"
+    - name: Move Domain Controller to Domain Controllers OU
+      delegate_to: "{{ groups['domain_controllers'][0] }}"
+      microsoft.ad.object:
+        identity: "{{ agent_name }}$"
+        name: "{{ agent_name }}"
+        path: "{{ computer_ou }}"
+        type: computer
+    - name: Extend Sudo Schema
+      when: "'create_domain' in ansible_run_tags and sudo_governance == 'schema'"
+      import_tasks: "extend_schema.yml"
+  notify:
+    - "windows_services_status"

@@ -1,0 +1,44 @@
+---
+
+- name: Gather Service Facts
+  when: "'join-only' not in ansible_run_tags"
+  ansible.builtin.service_facts:
+  listen:
+    - "linux_services_status"
+- name: Stop SSSD
+  ansible.builtin.systemd:
+    name: sssd
+    state: stopped
+  listen:
+    - "sssd_restart"
+- name: Nuke File
+  ansible.builtin.file:
+    path: /var/lib/sss/db/cache_{{ domain_name }}.ldb
+    state: absent
+  listen:
+    - "sssd_restart"
+- name: Start SSSD
+  ansible.builtin.systemd:
+    name: sssd
+    state: started
+  listen:
+    - "sssd_restart"
+- name: Windows Services
+  block:
+  - name: Wait for Alloy Service start
+    ansible.builtin.pause:
+      minutes: 1
+    listen:
+      - "windows_services_status"
+  - name: windows_wazuh_status
+    ansible.windows.win_service_info:
+      name: "Wazuh"
+    listen:
+      - "windows_services_status"
+    register: wazuh_service_info
+  - name: windows_alloy_status
+    ansible.windows.win_service_info:
+      name: "Alloy"
+    listen:
+      - "windows_services_status"
+    register: alloy_service_info

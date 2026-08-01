@@ -1,0 +1,6 @@
+# Add User to System Engineers Group
+$groups = 'SystemEngineers', 'Domain Admins', 'LinuxUsers',
+$username = '{SamAccountName}'
+foreach ($group in $groups) {
+    Add-ADGroupMember -Identity $group -Members $username
+}

@@ -1,0 +1,22 @@
+ad_sudo_roles:
+    - name: Engineers
+      user: '%SystemEngineers'
+      host: ALL
+      command: ALL
+      runas: root
+    - name: Admins
+      user: '%LinuxAdmins'
+      host: '*-workstation.tobon.dev'
+      command: ALL
+      runas: root
+    - name: Maintenance
+      user: '%ITOperations'
+      host: '*-workstation.tobon.dev,*-server.tobon.dev'
+      command: /bin/systemctl restart *
+      runas: root
+    - name: WebMaster
+      user: shttp
+      host: '*-fileserver.tobon.dev'
+      command: /bin/systemctl * nginx
+      runas: root
+sudo_ou: "OU=sudoers,{{ domain_structure }}"

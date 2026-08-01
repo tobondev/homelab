@@ -1,0 +1,44 @@
+---
+- name: Sudo Schema Extension Tasks
+  block:
+    - name: Assert sudoRole Class in Active Directory Schema
+      block:
+        - name: Query Schema Partition for sudoRole Class
+          microsoft.ad.object_info:
+            domain_server: localhost
+            search_base: "CN=Schema,CN=Configuration,{{ domain_structure }}"
+            search_scope: one_level
+            ldap_filter: "(&(objectClass=classSchema)(lDAPDisplayName=sudoRole))"
+            properties:
+              - lDAPDisplayName
+              - governsId
+              - objectClassCategory
+          register: sudo_schema_query
+        - name: Assert that sudoRole schema extension exists
+          ansible.builtin.assert:
+            that:
+              - sudo_schema_query.objects | length > 0
+            fail_msg: "The 'sudoRole' class is missing. Extending Schema."
+            success_msg: "Verified 'sudoRole' class exists in the schema. Continuing."
+          ignore_errors: true
+          register: sudoRolesExist
+    - name: Extend Schema if not already extended
+      when: "sudo_schema_query.objects | length == 0"
+      block:
+        - name: Extend Schema | Create Schema download directory
+          ansible.windows.win_file:
+            path: "{{ schema_active_directory_download_path }}"
+            state: directory
+        - name: Extend Schema | Download Schema
+          ansible.windows.win_uri:
+            url: "{{ sudo_schema_url }}"
+            method: GET
+            dest: "{{ schema_active_directory_download_path }}\\schema.ActiveDirectory"
+            follow_redirects: safe
+        - name: Extend Schema
+          ansible.windows.win_powershell:
+            script: "ldifde -s 'localhost' -i -f {{ schema_active_directory_download_path }}\\schema.ActiveDirectory -c 'DC=X' {{ domain_structure }}"
+        - name: Extend Schema | Delete Schema download directory
+          ansible.windows.win_file:
+            path: "{{ schema_active_directory_download_path }}"
+            state: absent

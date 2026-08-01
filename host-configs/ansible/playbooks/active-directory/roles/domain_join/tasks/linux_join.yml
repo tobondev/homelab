@@ -1,0 +1,170 @@
+---
+- name: Linux Domain Join
+  vars:
+    domain_packages:
+      - realmd
+      - sssd-common
+      - sssd
+      - oddjob
+      - oddjob-mkhomedir
+      - sssd-ad
+      - adcli
+      - krb5-user
+  block:
+    - name: Pre-Flight Check - Ensure Security & Observability Agents are Active
+      when: "'join-only' not in ansible_run_tags"
+      block:
+        - name: Assert Wazuh and Alloy are running
+          ansible.builtin.assert:
+            that:
+              - "'wazuh-agent.service' in ansible_facts['services']"
+              - "ansible_facts['services']['wazuh-agent.service'].state == 'running'"
+              - "'alloy.service' in ansible_facts['services']"
+              - "ansible_facts['services']['alloy.service'].state == 'running'"
+            fail_msg: "PRE-FLIGHT FAILED: Host is missing active security or observability agents. Domain join aborted."
+      tags: [always]
+    # -----------------------------------------------------------------------
+    # Check if host is already joined to domain.
+    # -----------------------------------------------------------------------
+    - name: Check if already joined to domain
+      ansible.builtin.command:
+        cmd: "realm list"
+      register: current_realm_status
+      changed_when: false
+      # Errors need to be ignored to account for systems without the "realm"
+      # package installed.
+      ignore_errors: yes
+      tags: [always]
+    # -----------------------------------------------------------------------
+    # Install Required Packages for Domain-Join
+    # -----------------------------------------------------------------------
+    - name: Install Packages and Join Domain
+      when: domain_name not in current_realm_status.stdout
+      block:
+        - name: Install Domain-Join Required Packages
+          when: ansible_os_family == 'RedHat'
+          ansible.builtin.package:
+            name: "{{ domain_packages + 'krb5-workstation' + (['libsss_sudo'] if sudo_governance == 'schema' else []) }}"
+            state: latest
+        - name: Install Domain-Join Required Packages
+          when: ansible_os_family == 'Debian'
+          ansible.builtin.package:
+            name: "{{ domain_packages + 'krb5-user' + (['libsss-sudo'] if sudo_governance == 'schema' else []) }}"
+            state: latest
+        # -----------------------------------------------------------------------
+        # Join Domain
+        # -----------------------------------------------------------------------
+        - name: Join Domain
+          ansible.builtin.expect:
+            command: realm join {{ domain_name }} --user {{ domain_admin }} --computer-ou " {{ domain_ou_path }}"
+            responses:
+              (?i)Password for .*: "{{ domain_admin_password }}"
+          no_log: true
+        # -----------------------------------------------------------------------
+        # Set Login Permissions for the allowed groups exclusively
+        # -----------------------------------------------------------------------
+        - name: Set realm permissions
+          shell: realm deny --all && realm permit -g "{{ allowed_groups }}"
+      tags: [always]
+    # -----------------------------------------------------------------------
+    # Conditional: Govern Sudo Permissions by Group Membership
+    # -----------------------------------------------------------------------
+    # Only runs with when "sudoers" is passed as a tag.
+    # -----------------------------------------------------------------------
+    # Leverage JinJa to create an active-directory-sudo entry in sudoers.d
+    # -----------------------------------------------------------------------
+    - name: Use Linux Admins group to govern sudoers permission
+      #when: "sudo_governance == 'sudoers' and domain_name not in current_realm_status.stdout"
+      block:
+        # -----------------------------------------------------------------------
+        # Use template to create active-directory-sudo under sudoers.d
+        # -----------------------------------------------------------------------
+        - name: Deploy Sudoers File
+          template:
+            src: templates/sudoers.j2
+            dest: /etc/sudoers.d/active-directory-sudo
+            owner: root
+            group: root
+            mode: 400
+      tags: [always]
+    # -----------------------------------------------------------------------
+    # Conditional: Govern Sudo Permissions by Sudo Schema
+    # -----------------------------------------------------------------------
+    # Only runs with when "schema" is passed as a tag.
+    # -----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
+    - name: Use Linux Admins group to govern sudoers permission
+      when: "sudo_governance == 'schema' and domain_name not in current_realm_status.stdout"
+      block:
+        # -----------------------------------------------------------------------
+        # Configure nsswitch
+        # -----------------------------------------------------------------------
+        - name: Ensure sudoers is in nsswitch.conf
+          ansible.builtin.lineinfile:
+            path: /etc/nsswitch.conf
+            regexp: '^sudoers:'
+            line: 'sudoers:    files sss'
+            state: present
+        # -----------------------------------------------------------------------
+        # Configure sssd
+        # -----------------------------------------------------------------------
+        - name: Ensure sudo is enabled in sssd.conf services
+          ansible.builtin.lineinfile:
+            path: /etc/sssd/sssd.conf
+            regexp: '^services\s*='
+            line: 'services = nss, pam, sudo'
+            state: present
+          register: sssd_services
+        - name: Ensure ldap_sudo_search_base is set in sssd.conf services
+          ansible.builtin.lineinfile:
+            path: /etc/sssd/sssd.conf
+            regexp: '^ldap_sudo_search_base\s*='
+            line: 'ldap_sudo_search_base = ou=sudoers,{{ domain_structure }}'
+            state: present
+          register: sssd_search_base
+        - name: Ensure ldap sudo regex is enabled in sssd.conf services
+          ansible.builtin.lineinfile:
+            path: /etc/sssd/sssd.conf
+            regexp: '^ldap_sudo_include_regexp\s*='
+            line: 'ldap_sudo_include_regexp = True'
+            state: present
+          register: sssd_ldap_sudo
+        - name: Ensure ldap is a sudo provider
+          ansible.builtin.lineinfile:
+            path: /etc/sssd/sssd.conf
+            line: 'sudo_provider = ldap'
+            insertafter: EOF
+            state: present
+          register: sssd_ldap_sudo_provider
+        - name: Add sudo section
+          ansible.builtin.lineinfile:
+            path: /etc/sssd/sssd.conf
+            line: '[sudo]'
+            insertafter: EOF
+            state: present
+          register: sssd_sudo_section
+        # -----------------------------------------------------------------------
+        # Force stop and reset. "sss_cache -E" doesn't work immediately after.
+        # -----------------------------------------------------------------------
+      notify:
+        - sssd_restart
+
+      tags: [always]
+    # -----------------------------------------------------------------------
+    # Verify Domain Join
+    # -----------------------------------------------------------------------
+    - name: Verify Join Operation
+      when: "'no-verify' not in ansible_run_tags"
+      block:
+        - name: Verify join operation
+          command: realm list
+          register: new_realm_status
+          ignore_errors: true
+        - name: Display command output
+          debug:
+            var: new_realm_status.stdout
+          when: new_realm_status.stdout_lines | length>0
+        - name: Display failure message
+          when: not new_realm_status.stdout_lines
+          debug:
+            msg: "Failed: Not joined to a domain"
