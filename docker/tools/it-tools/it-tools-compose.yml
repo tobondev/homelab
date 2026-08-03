@@ -1,0 +1,7 @@
+services:
+  it-tools:
+    container_name: it-tools
+    image: corentinth/it-tools:latest
+    ports:
+    - 80:80
+    restart: always

@@ -1,0 +1,16 @@
+http:
+  routers:
+    meshcommander:
+      rule: 'Host(`meshcommander.{{ env "DOMAIN" }}`)'
+      entryPoints:
+        - websecure
+      service: "meshcommander-svc"
+      middlewares:
+      - "trusted-only"
+      tls: {}
+
+  services:
+    meshcommander-svc:
+      loadBalancer:
+        servers:
+          - url: '{{ env "MESHCOMMANDER_IP" }}'

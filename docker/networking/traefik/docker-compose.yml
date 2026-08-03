@@ -1,0 +1,85 @@
+networks:
+  traefiknet:
+    name: traefiknet
+  proxy_web:
+    external: true
+
+volumes:
+  traefik_letsencrypt:
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: traefik
+    command:
+      - "--log.level=DEBUG"
+      - "--api.dashboard=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.endpoint=tcp://dockerproxy:2375"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,1.0.0.1:53"
+      - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+      - "--providers.file.directory=/dynamic_conf"
+      - "--providers.file.watch=true"
+
+    # MOVED: Environment variables are now properly assigned to Traefik
+    environment:
+      - CF_DNS_API_TOKEN
+      - DOMAIN=${DOMAIN}
+      - HOMEASSISTANT_IP=${HOMEASSISTANT_IP}
+      - LAN_VLAN=${LAN_VLAN}
+      - TV_VLAN=${TV_VLAN}
+      - AD_VLAN=${AD_VLAN}
+      - IOT_VLAN=${IOT_VLAN}
+      - MESHCOMMANDER_IP=${MESHCOMMANDER_IP}
+      - NANOKVM_IP=${NANOKVM_IP}
+      - SERVER_COCKPIT_IP=${SERVER_COCKPIT_IP}
+      - LAB_COCKPIT_IP=${LAB_COCKPIT_IP}
+
+    # MOVED: Wildcard definitions moved to their correct labels block
+    labels:
+      - "traefik.enable=true"
+      # We attach the wildcard request to the Traefik dashboard router itself as the "core" app
+      - "traefik.http.routers.traefik-dash.rule=Host(`traefik.${DOMAIN}`)"
+      - "traefik.http.routers.traefik-dash.service=api@internal"
+      - "traefik.http.routers.traefik-dash.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dash.tls=true"
+      - "traefik.http.routers.traefik-dash.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.traefik-dash.tls.domains[0].main=${DOMAIN}"
+      - "traefik.http.routers.traefik-dash.tls.domains[0].sans=*.${DOMAIN}"
+
+    ports:
+      - "${HTTRAEFIK}:80"
+      - "${HTTRAEFIKS}:443"
+    volumes:
+      - "${TRAEFIK_LESTENCRYPT}:/letsencrypt"
+      - "${DYNAMIC_CONF}:/dynamic_conf:ro"
+      - "${CERTS}:/certs:ro"
+    restart: unless-stopped
+    depends_on:
+      - dockerproxy
+    networks:
+      - traefiknet
+      - proxy_web
+
+  dockerproxy:
+    image: tecnativa/docker-socket-proxy:latest
+    container_name: seconddockerproxy
+    environment:
+      # Removed the misplaced variables from here
+      - CONTAINERS=1
+      - IMAGES=1
+      - INFO=1
+      - NETWORKS=1
+      - VOLUMES=1
+      - POST=0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: always
+    networks:
+      - traefiknet

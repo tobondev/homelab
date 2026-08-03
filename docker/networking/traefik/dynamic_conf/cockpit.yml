@@ -1,0 +1,41 @@
+http:
+  routers:
+    servercockpit:
+      rule: 'Host(`servercockpit.{{ env "DOMAIN" }}`)'
+      entryPoints:
+        - "websecure"
+      service: "servercockpit-svc"
+      middlewares:
+      - "trusted-only"
+      tls: {}
+    labcockpit:
+      rule: 'Host(`labcockpit.{{ env "DOMAIN" }}`)'
+      entryPoints:
+        - "websecure"
+      service: "labcockpit-svc"
+      middlewares:
+      - "trusted-only"
+      tls: {}
+
+  services:
+    servercockpit-svc:
+      loadBalancer:
+        serversTransport: "trust-server-ca"
+        servers:
+          - url: '{{ env "SERVER_COCKPIT_IP" }}'
+    labcockpit-svc:
+      loadBalancer:
+        serversTransport: "trust-lab-ca"
+        servers:
+          - url: '{{ env "LAB_COCKPIT_IP" }}'
+  serversTransports:
+    trust-server-ca:
+      serverName: "127.0.0.1"
+      rootCAs:
+        -"/certs/server_cockpit-cert.crt"
+      insecureSkipVerify: true
+    trust-lab-ca:
+      serverName: "127.0.0.1"
+      rootCAs:
+        -"/certs/lab_cockpit-cert.crt"
+      insecureSkipVerify: true

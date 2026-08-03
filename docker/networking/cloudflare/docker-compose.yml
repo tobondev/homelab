@@ -1,0 +1,13 @@
+networks:
+  cloudflarenet:
+    name: cloudflarenet
+  proxy_web:
+    external: true
+
+services:
+  cloudflare-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: newtunnel
+    command: tunnel run
+    environment:
+      - "TUNNEL_TOKEN=${CLOUDFLARE_TOKEN}"

@@ -1,0 +1,11 @@
+[Unit]
+Description=Home Assistant KVM Port Forwarding
+After=network.target libvirtd.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/socat TCP-LISTEN:8123,fork,reuseaddr TCP:{VIRTUAL_KVM_IP}:8123
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

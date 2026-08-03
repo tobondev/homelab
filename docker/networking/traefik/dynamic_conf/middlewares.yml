@@ -1,0 +1,19 @@
+http:
+  middlewares:
+    trusted-only:
+      ipAllowList:
+        sourceRange:
+          - '{{ env "LAN_VLAN" }}'
+    tv-only:
+      ipAllowList:
+        sourceRange:
+          - '{{ env "TV_VLAN" }}'
+          - '{{ env "LAN_VLAN" }}'
+    ad-only:
+      ipAllowList:
+        sourceRange:
+          - '{{ env "AD_VLAN" }}'
+    iot-only:
+      ipAllowList:
+        sourceRange:
+          - '{{ env "IOT_VLAN" }}'

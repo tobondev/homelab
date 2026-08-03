@@ -85,6 +85,8 @@ services:
       - POST=0
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      -"${SOCKETPROXY}:2375"
     networks:
       - observability
     restart: always

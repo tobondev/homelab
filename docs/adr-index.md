@@ -12,3 +12,4 @@ This log captures the significant architectural decisions for the homelab enviro
 | 001 | 2026-04-22 | [Intentional Deferral of Out-of-Band Python Patching](adrs/adr-2026-04-22-006-intentional-deferral-of-out-of-band-python-patching.md) | Implemented |
 | 007 | 2026-06-06 | [Wazuh XDR as Security Monitoring Platform](adrs/adr-2026-06-05-007-wazuh-xdr-as-security-monitoring-platform.md) | Accepted |
 | 008 | 2026-06-05 | [Deploy Wazuh XDR in Parallel with HIIP](adrs/adr-2026-06-06-008-deploy-wazuh-xdr-in-parallel-with-hiip.md) | Accepted |
+| 009 | 2026-08-02 | [Traefik as Reverse Proxy with DNS-01 Wildcard Certificates](adrs/adr-2026-08-02-009-traefik-as-reverse-proxy-with-dns-01-wildcard-certificates.md) | Proposed |

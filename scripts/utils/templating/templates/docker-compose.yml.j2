@@ -1,0 +1,38 @@
+networks:
+  {{ NAME }}:
+  {{ PROXY_WEB }}:
+    external: true
+services:
+  {{ NAME }}:
+    container_name: {{ CONTAINER_NAME }}
+    labels:
+      # Tell Traefik to expose this container
+      - "traefik.enable=true"
+      # Route configuration
+      - "traefik.http.routers.{{ NAME }}.rule=Host(`{{ NAME }}.${DOMAIN}`)"
+      - "traefik.http.routers.{{ NAME }}.entrypoints=websecure"
+      # SSL/TLS configuration telling Let's Encrypt to secure it
+      - "traefik.http.routers.{{ NAME }}.tls=true"
+      - "traefik.http.routers.{{ NAME }}.tls.certresolver={{ CERT_RESOLVER }}"
+      - "traefik.http.routers.{{ NAME }}.middlewares={{ MIDDLEWARE }}@file"
+      # Network specification
+      - "traefik.docker.network={{ PROXY_WEB }}"
+    {% if environment_vars %}
+    environment:
+    {% for key, value in environment_vars.items() %}
+    - {{ key }}=${{ key }}
+    {% endfor %}
+    {% endif %}
+    networks:
+      - {{ PROXY_WEB }}
+      - {{ NAME }}
+    image: {{ PUBLISHER }}/{{ NAME }}:{{ VERSION }}
+# Dynamically construct nested paths for volumes
+    {% if volumes %}
+    volumes:
+    {% for volume in volumes %}
+        - "${{ NAME }}_{{ volume.name }}:{{ volume.target }}"
+    {% endfor %}
+    {% endif %}
+    restart: {{ RESTART }}
+    user: {{ UID }}:{{ GID }}

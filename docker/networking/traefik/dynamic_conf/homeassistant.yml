@@ -1,0 +1,14 @@
+http:
+  routers:
+    homeassistant:
+      rule: 'Host(`homeassistant.{{ env "DOMAIN" }}`)'
+      entryPoints:
+        - "websecure"
+      service: "homeassistant-svc"
+      tls: {}
+
+  services:
+    homeassistant-svc:
+      loadBalancer:
+        servers:
+          - url: '{{ env "HOMEASSISTANT_IP" }}'

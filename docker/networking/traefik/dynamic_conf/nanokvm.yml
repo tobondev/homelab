@@ -1,0 +1,23 @@
+http:
+  routers:
+    nanokvm:
+      rule: 'Host(`kvmtest.{{ env "DOMAIN" }}`)'
+      entryPoints:
+        - "websecure"
+      service: "nanokvm-svc"
+      middlewares:
+      - "trusted-only"
+      tls: {}
+
+  services:
+    nanokvm-svc:
+      loadBalancer:
+        serversTransport: "trust-custom-ca"
+        servers:
+          - url: '{{ env "NANOKVM_IP" }}'
+  serversTransports:
+    trust-custom-ca:
+      serverName: "localhost"
+      rootCAs:
+        -"/certs/nano-kvm-cert.crt"
+      insecureSkipVerify: true
