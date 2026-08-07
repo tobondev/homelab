@@ -5,38 +5,78 @@
     "priority": 100
   },
   {
-    "title": "Decoupling L2 mesh and L3 routing for Homelab Network",
-    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-03-24-decoupling-l2-mesh-and-l3-routing-for-homelab-network.md",
-    "priority": 95
+    "title": "Sysadmin Log: Hybrid Identity Infrastructure — Stage 4",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-07-12-hybrid-os-lab-stage-4.md",
+    "priority": 97
   },
   {
-    "title": "Incident Report: LUKS Partition Accidental deletion and Recovery",
+    "title": "Incident Report: LUKS Partition Accidental Deletion and Recovery",
     "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/incidents/2025-11-06-root-drive-luks-partition-accidental-deletion-and-recovery.md",
+    "priority": 93
+  },
+  {
+    "title": "Incident Report: Manual Deployment of Upstream BSD Patches for CURL CVEs",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/incidents/2026-04-02-manual-deployment-of-upstream-bsd-patches-for-curl-cves.md",
     "priority": 90
   },
   {
-    "title": "Incident Report: Manual deployment of upstream BSD patches for CURL CVEs",
-    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/incidents/2026-04-02-manual-deployment-of-upstream-bsd-patches-for-curl-cves.md",
-    "priority": 85
+    "title": "Sysadmin Log: Traefik Reverse Proxy with DNS-01 Wildcard Certificates",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-08-02-traefik-implementation-and-deployment.md",
+    "priority": 87
+  },
+  {
+    "title": "Sysadmin Log: Wazuh XDR MVP Deployment",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-06-26-wazuh-mvp-deployment.md",
+    "priority": 84
+  },
+  {
+    "title": "Architecture Decision Record: Traefik as Reverse Proxy with Wildcard Certificates (ADR-009)",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/adrs/adr-2026-08-02-009-traefik-as-reverse-proxy-with-dns-01-wildcard-certificates.md",
+    "priority": 81
   },
   {
     "title": "Documented Exception to Hybrid Patching Posture (ADR-006)",
     "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/adrs/adr-2026-04-22-006-intentional-deferral-of-out-of-band-python-patching.md",
-    "priority": 80
+    "priority": 78
   },
   {
-    "title": "Architecture Decision Records: Implementing SOPS as the Production Secrets Management",
-    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/adrs/adr-2026-04-10-004-implementing-sops-as-the-production-secrets-management.md",
+    "title": "Runbook: Automated AD Domain Build via Ansible Playbook",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/runbooks/runbook-2026-07-24-005-ad-domain-automated-build-via-ansible-playbook.md",
     "priority": 75
   },
   {
-    "title": "Architecture Decision Records: Grafana Stack for SIEM and IDS Integration",
+    "title": "Decoupling L2 Mesh and L3 Routing for Homelab Network",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-03-24-decoupling-l2-mesh-and-l3-routing-for-homelab-network.md",
+    "priority": 72
+  },
+  {
+    "title": "Architecture Decision Records: Implementing SOPS as the Production Secrets Management (ADR-004)",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/adrs/adr-2026-04-10-004-implementing-sops-as-the-production-secrets-management.md",
+    "priority": 69
+  },
+  {
+    "title": "Architecture Decision Records: Grafana Stack for SIEM and IDS Integration (ADR-005)",
     "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/adrs/adr-2026-04-04-005-lgap-stack-for-siem-and-ids-integration.md",
-    "priority": 70
+    "priority": 66
+  },
+  {
+    "title": "Architecture Decision Record: Wazuh XDR as Security Monitoring Platform (ADR-007)",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/adrs/adr-2026-06-05-007-wazuh-xdr-as-security-monitoring-platform.md",
+    "priority": 63
+  },
+  {
+    "title": "Architecture Decision Record: Parallel Wazuh XDR Deployment with Hybrid Identity Project (ADR-008)",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/adrs/adr-2026-06-06-008-deploy-wazuh-xdr-in-parallel-with-hiip.md",
+    "priority": 60
+  },
+  {
+    "title": "Sysadmin Log: Ansible Playbook for Wireless Mesh Channel Synchronization",
+    "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-06-30-ansible-playbook-for-wireless-mesh-channel-synchronization.md",
+    "priority": 57
   },
   {
     "title": "Sysadmin Log: Deploying Ansible Provisioning for OpenWRT Nodes",
     "url": "https://raw.githubusercontent.com/tobondev/homelab/main/docs/operations/2026-04-05-deploying-ansible-provisioning-for-openwrt-nodes.md",
-    "priority": 65
+    "priority": 54
   }
 ]

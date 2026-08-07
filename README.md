@@ -1,45 +1,30 @@
 # Homelab Engineering & Operations
 
 ## Overview
+
 This repository documents the architecture, operations, and security engineering decisions behind a production-grade homelab I design, operate, and maintain independently. It reflects the kind of work I do: structured change management, documented incident response, automated disaster recovery, and deliberate security architecture across a segmented multi-VLAN environment.
 
 Everything here is real infrastructure. The ADRs were written before or during implementation. The incident reports reflect actual failures and recoveries. The operations logs include timing data from actual deployments.
-If you're evaluating my technical background: start with docs/incidents/ for incident response, docs/adrs/ for architectural decision-making, and scripts/admin/backup/ for infrastructure automation design.
 
 The documentation here reflects two distinct phases of the project:
 
 - **Phase 1 (pre-March 2026):** Build fast, break things, learn by doing. Documentation was sparse and retroactive. The current-state architecture docs in `docs/architecture/` represent an honest reconstruction of the decisions that survived this phase, with rationale written from the current vantage point rather than backdated.
-- **Phase 2 (March 2026 onward):** Documentation-first. All architectural decisions are captured as ADRs before or during implementation. New projects (LGAP centralized logging, AD/Azure AD integration) will have full decision records from day one.
 
-This distinction reflects how production infrastructure actually evolves — and being transparent about that is the point.
-
-Beyond version-controlled documentation, this repository also serves as the content delivery backend for my professional portfolio at [tobon.dev](https://tobon.dev). The frontend dynamically fetches markdown documentation and telemetry via a structured JSON manifest (`index.json`), rendering it directly into the site's custom viewer.
+- **Phase 2 (March 2026 onward):** Documentation-first. All architectural decisions are captured as ADRs before or during implementation. Every deployment has an operations log. Every incident has a post-mortem.
 
 ---
 
-## Documentation Infrastructure: Journal Helper
+## Where to Start
 
-I ran into documentation friction and solved it by building a tool. Journal Helper is a five-script Bash pipeline that wraps terminal sessions in script(1), injects a note() function for real-time phase annotation, and runs a sequenced perl/col parsing pipeline on exit to clean ANSI noise and inject a phase-separated transcript directly into templated Markdown between invisible HTML sentinels. The template engine auto-discovers entry types, generates sequential IDs for ADRs and runbooks, expands template variables, and self-maintains an ADR index. The session wrapper builds a scoped rc file that suppresses startup noise via stub/unstub without modifying user files, and handles zsh and bash through their correct compatibility mechanisms.
-
-The output of this is the documentation that you are reading.
-
----
-
-## Repository Structure
-
-```
-docs/
-  architecture/
-    CURRENT-STATE.md        # Full current-state documentation with trade-off rationale
-  adr/                      # Architectural Decision Records (Phase 2 forward)
-  runbooks/                 # Operational procedures and incident response
-scripts/
-  admin/
-    backup/                 # Three-tier backup orchestration and cost-optimization for AWS Glacier
-  utils/
-    journal-helper/         # Documentation pipeline using terminal logs and a dynamic templating engine
-
-```
+| Looking for | Start here |
+|---|---|
+| Current-state architecture overview | [`docs/architecture/CURRENT-STATE.md`](https://github.com/tobondev/homelab/blob/main/docs/architecture/CURRENT-STATE.md) |
+| Incident response | [`docs/incidents/`](https://github.com/tobondev/homelab/tree/main/docs/incidents) |
+| Architectural decision-making | [`docs/adrs/`](https://github.com/tobondev/homelab/tree/main/docs/adrs) |
+| Deployment & change management | [`docs/operations/`](https://github.com/tobondev/homelab/tree/main/docs/operations) |
+| Runbooks & operational procedures | [`docs/runbooks/`](https://github.com/tobondev/homelab/tree/main/docs/runbooks) |
+| Infrastructure automation | [`scripts/`](https://github.com/tobondev/homelab/tree/main/scripts) |
+| Hybrid Identity Infrastructure Project | [`docs/architecture/ROADMAP-HYBRID-IDENTITY-INFRASTRUCTURE.md`](https://github.com/tobondev/homelab/blob/main/docs/architecture/ROADMAP-HYBRID-IDENTITY-INFRASTRUCTURE.md) |
 
 ---
 
@@ -47,54 +32,81 @@ scripts/
 
 ### Network Security & Segmentation
 
+- **Edge Routing & Firewall:** Dedicated OPNsense appliance for centralized Layer 3 governance, enforcing strict firewall rules, alias-based inter-VLAN blocking, and comprehensive logging
+- **VLAN Segmentation:** Isolated topologies for IoT, guest, smart TV, AD domain, and core infrastructure. Untrusted devices have no lateral movement path to operational systems.
+- **Wireless Mesh:** Layer 2 backbone via `batman-adv` on OpenWRT nodes, structurally decoupled from Layer 3. DHCP and routing remain solely on OPNsense. Mesh nodes are WAN-denied and only reachable in the control plane at L3. Provisioned and hardened via Ansible.
+- **Reverse Proxy & TLS:** Traefik handles internal SSL termination via Let's Encrypt DNS-01 wildcard certificates. A `socat` systemd service bridges KVM MacVTap interfaces for VMs that require proxy routing without LAN-level plain HTTP exposure.
+- **Zero-Trust Ingress:** All external access is routed through Cloudflare Tunnels. No inbound ports are open to the WAN.
 
-- **Edge Routing & Firewall:** Dedicated OPNsense appliance for centralized Layer 3 governance, enforcing strict firewall rules and comprehensive logging
-- **VLAN Segmentation:** Isolated topologies for IoT, guest, smart TV, and core infrastructure. Untrusted devices have no lateral movement path to operational systems.
-- **Wireless Mesh:** Layer 2 backbone via `batman-adv` on OpenWRT nodes, structurally decoupled from Layer 3 to minimize overhead on mesh nodes. DHCP and routing remain solely on OPNsense. These nodes are WAN-denied and are only available in the control plane in L3.
+### Observability & Security Monitoring
+
+- **LGAP Stack:** Loki, Grafana, Alloy, and Prometheus provide centralized telemetry, log
+  aggregation, and alerting across all bare-metal hosts, VMs, Docker stacks, the OPNsense
+  firewall, and Suricata IDS.
+- **Wazuh XDR:** Network-wide endpoint detection and response, deployed as a Docker Compose stack
+  with agents across Linux, Windows, and OPNsense. Custom Suricata severity mapping and active
+  response rules configured. CVE triage methodology: CVSS score is context, not verdict — attack
+  surface, exploit feasibility, and operational blast radius govern patching decisions.
 
 ### Storage & Pre-Boot Security
 
+- **Full Disk Encryption:** LUKS encryption across all bare-metal hosts, with LVM layered on top for single-passphrase unlock. Keys are unique per system and rotated on a six-month schedule.
+- **Filesystem:** BTRFS mandated across all systems for CoW semantics, native snapshotting, and bit-rot protection. Chosen over ZFS for native kernel support in a frequent-update Arch environment.
+- **Three-Tier Backup Pipeline:** Local BTRFS snapshots and cross-host SSH replication via `btrbk`; offsite cold archival to AWS Glacier Deep Archive via `rclone` delta-sync against a Last Known
+  Good Backup subvolume, bypassing early-deletion penalties and minimizing API costs.
+- **Remote Decryption:** `tinyssh` in the initramfs with fixed interface IPs provides encrypted remote LUKS unlock before the main SSH daemon initializes. Key material is strictly separated from standard SSH access.
 
-- **Full Disk Encryption:** LUKS encryption across all bare-metal deployments, with LVM layered on top to allow single-passphrase unlock of the full filesystem. Keys are rotated on a six-month schedule; no two systems share a key.
-- **Filesystem:** BTRFS with CoW semantics for native bit-rot protection and instantaneous snapshot-level rollbacks. Chosen over ZFS for native kernel support — critical in a frequent-update Arch environment where DKMS-based ZFS would be a reliability liability.
-- **Bootloader:** systemd-boot, standardized across all systems after deliberate evaluation against GRUB's Argon2ID support limitations at the time of the decision.
+### Automation & Configuration Management
 
-## Identity & Access Management
+- **Ansible:** Provisioning and security hardening across OpenWRT mesh nodes, bare-metal Linux hosts, Windows Server, and VM infrastructure. Playbooks are idempotent, templated, and version-controlled. Per-host encrypted secrets managed via SOPS + age.
+- **Secrets Management:** SOPS + age encryption across all configuration and deployment pipelines. Vaultwarden as the centralized credential store for secrets that require human access.
 
-- **Hybrid Domain Infrastructure:** Active Directory Domain Services (Windows Server Core) running in a strictly segmented VLAN. OPNsense retains DHCP and upstream routing, while the Domain Controller acts authoritatively for internal DNS.
-
-- **Automated Provisioning:** Declarative JSON schema and custom PowerShell suite used to provision 1,000+ domain users simultaneously, featuring automated collision handling and tiered password complexity.
-
-- **Engineered Vulnerability:** The environment is deployed as code with intentionally vulnerable artifacts (Kerberoastable service accounts, misconfigured ACLs, weak passwords) to support ongoing offensive/defensive telemetry analysis.
-
-### Disaster Recovery & Availability
-- **Backup Strategy:** Automated 3-2-1 backup architecture managed by `btrbk` and `rclone`. Local snapshots, cross-host SSH replication (using btrbk's restricted SSH helper to limit key exposure), and offsite cold storage with a 6-month Glacier bucket rotation for cost containment.
-- **Warm Failback:** Pre-configured standby hardware with a validated rollback path. Architecture supports zero-downtime recovery from most failure scenarios.
-- **Default Known-Good State:** systemd-boot fallback snapshot integration ensures a bootable known-good state is always one selection away; a dynamic replacement for GRUB-btrs using systemdboot is under production.
-
-### Containerization & Workloads
-- **Deployment Model:** Modular Docker Compose stacks with BTRFS bind mounts for stateful services, enabling atomic backup and restore of service state alongside container configuration.
-- **Ansible:** Configuration management and automated provisioning across bare-metal and VM infrastructure.
-- **Secrets Management:** Local Vaultwarden instance as the authoritative secrets store; `.env` isolation enforced at the compose level, secured and version-controlled with SOPS-encryption.
-- **Cross-OS Observability:** Grafana stack (Loki, Grafana, Alloy, Prometheus) for centralized telemetry, log aggregation, and alerting across services and infrastructure, including Active Directory Domain Controllers for Windows Event Log ingestion and processing.
-- **Testing Pipeline:** QEMU/KVM with Open vSwitch for virtual-to-physical staging, enabling hardware-in-the-loop validation before production deployment.
-
-### Zero-Trust Ingress
-- **No open inbound ports.** All external access is routed through Cloudflare Tunnels, with firewall rules validating origin IPs against Cloudflare's published ranges.
-- **Pre-boot remote access:** Static interface IPs configured for tinyssh, enabling encrypted remote access before the main SSH daemon initializes — used for remote LUKS unlock during disaster recovery.
 ---
 
+## Hybrid Identity Infrastructure Project
 
-## Planned Work
+A structured, multi-stage engineering project building a production-grade mixed-OS identity
+environment. The domain infrastructure is **ephemeral by design**: built to validate, document,
+and attack — not to run indefinitely. Each stage produces documented artifacts before the
+environment is torn down and rebuilt for the next.
 
-The following are in active planning or early implementation. ADRs will be published as decisions are finalized.
+| Stage | Description | Status |
+|-------|-------------|--------|
+| 1 | Isolated GUI sandbox — foundational AD knowledge, PowerShell provisioning baseline | Complete |
+| 2 | Production integration — Server Core DC, declarative JSON provisioning, Grafana telemetry | Complete |
+| 3 | EntraID Cloud Bridge — SSO and Conditional Access via Microsoft 365 tenant | Planned |
+| 4 | Cross-OS domain integration — RHEL and Debian endpoints joined via Ansible, AD schema sudo governance, dual DC, Kerberos TGT validation pipeline | Complete |
+| 5 | Offensive security & defensive analysis — Bloodhound, Kerberoasting, password spraying; Wazuh as detection layer for real attack telemetry | Active |
 
-- **EntraID Cloud Bridge:** Synchronizing on-premise AD Domain with a Microsoft 365 tenant using EntraID Connect to test SSO and Conditional Access policies. [Planned]
-- **Offensive Security & Defensive Analysis:** Executing Bloodhound, Kerberoasting, and password spraying against the vulnerable AD environment to capture and map defensive telemetry in Grafana. [Planned]
-- **Suricata IDS:** IDS system runnig on OPNsense hardware, which provides a first layer of detection and response for robust network security. [Partially deployed. Tuning based on Offensive Security Work]
-- **Hybrid OS Active Directory Domain:** Mixed-OS domain integration (Linux + Windows), using `realmd`, `sssd` and `Kerberos` to enroll RHEL clients in an Active Directory Domain. [Planned]
-- **Wazuh XDR:** Deploying Wazuh VM, integrating with OPNsense's wazuh agent to provide network-wide protection. Configure log forwarding to Grafana Stack. [In-Progress]
+**Key artifacts:**
+- [Stage 4 Operations Log](docs/operations/2026-07-12-hybrid-os-lab-stage-4.md)
+- [Runbook: Automated AD Domain Build via Ansible](docs/runbooks/runbook-2026-07-24-005-ad-domain-automated-build-via-ansible-playbook.md)
+- [Full Project Roadmap](docs/architecture/ROADMAP-HYBRID-IDENTITY-INFRASTRUCTURE.md)
 
+---
+
+## Documentation Infrastructure: Journal Helper
+
+I ran into documentation friction early in the lifecycle of this repository. The context switch between executing complex terminal operations and retroactively writing down what happened meant I was either moving too slow or my notes were incomplete. The gap between "knowing what I did" and "proving what I did" was too wide.
+
+To permanently solve this, I built `Journal Helper`: a custom Bash-based documentation pipeline that wraps terminal sessions in `script(1)`, injects a `note()` function for real-time phase annotation, and runs a sequenced `perl`/`col` parsing pipeline on exit to strip ANSI noise and inject a phase-separated transcript directly into templated Markdown. The template engine auto-discovers entry types, generates sequential IDs for ADRs and runbooks, expands template variables, and self-maintains an ADR index.
+
+The output of this pipeline is the documentation you are reading. Every operations log and incident report in this repository was produced this way: exact terminal output, not reconstruction from memory.
+
+Source: [`scripts/utils/journal-helper/`](scripts/utils/journal-helper)
+
+---
+
+## Currently Active
+
+- **Stage 5: Offensive Security & Defensive Analysis** — Executing deliberate attack paths (Kerberoasting, Bloodhound, password spraying) against intentionally vulnerable AD service accounts. Wazuh provides the detection layer: the deliverable is not the attack — it is the documented correlation between each technique and its defensive telemetry signature.
+
+---
+
+## Planned
+
+- **EntraID Cloud Bridge** — Synchronizing the on-premise AD domain with a Microsoft 365 Entra ID
+  tenant to validate SSO, delta syncs, and Conditional Access paths. (HIIP Stage 3)
 
 ---
 
