@@ -33,9 +33,13 @@
 ### NEXT DAY - [YYYY-MM-DD] (If applicable)
 * **[00:00]** - System restored to standard operation.
 
-## 3. Risk Assessment
-#### Risk Assessment Matrix
+## 3. Impact & Risk Assessment
+> *Fill out the section(s) that apply to the current incident. Delete the table that does not apply. If a security vulnerability directly caused an operational outage, fill out both.*
 
+### 3A. Security & Vulnerability Matrix (SecOps)
+> *Delete this block if the incident was a strictly operational or hardware failure*
+
+#### Risk Assesment Matrix
 | Likelihood \ Severity | Very Low | Low | Medium | High | Very High |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **Very High** | Medium | High | High | **Critical** | **Critical** |
@@ -44,12 +48,20 @@
 | **Low** | Very Low | Low | Medium | Medium | High |
 | **Very Low** | Very Low | Very Low | Low | Medium | Medium |
 
-### Risk Assessment Analysis
+#### Exposure Analysis
 | Vulnerability / CVE | Severity | Local Exposure / Threat | Risk | Remediation / Fixed In |
 | :--- | :--- | :--- | :--- | :--- |
 | [e.g., CVE-202X-XXXX] | [e.g., High] | [e.g., High - WAN exposed API] | [e.g., Critical] | [e.g., v8.19.0] |
-| | | | | |
-| | | | | |
+
+
+### 3B. Operational Impact & Resilience (SRE)
+> *Delete this block if the incident was purely a contained security event with no system downtime*
+
+#### Failure Analysis
+| Failure Domain | Event / Trigger | Degradation State | Impact Limit / Safeguard | Severity |
+|---|---|---|---|---|
+| [e.g., Main Server OS] | [e.g., Filesystem Saturation] | [e.g., Severe I/O latency.] | [e.g., **Safeguard:** Boot drive isolated.] | [e.g., Medium] |
+
 
 ## 4. Root Cause Analysis (RCA)
 > *Why did this happen? Focus on the technical failure, process gap, or specific operator error. Strip away emotion; focus on the mechanics of the failure.*
