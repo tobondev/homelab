@@ -1,0 +1,73 @@
+name: "Architecture / Feature"
+description: "Deploy a net-new capability or refactor existing infrastructure."
+title: "[Feature]: "
+labels: ["feature", "architecture"]
+body:
+  - type: dropdown
+    id: target_env
+    attributes:
+      label: 'Target Environment'
+      description: 'Select the primary infrastructure layer impacted by this deployment.'
+      options:
+        - Layer 3 / OPNsense
+        - Layer 2 / Mesh Backbone
+        - Core OS (Arch / Debian / RHEL)
+        - Docker Compose Workload
+        - Identity / Active Directory
+    validations:
+      required: true
+
+  - type: input
+    id: associated_adr
+    attributes:
+      label: 'Associated Documentation'
+      description: 'Provide the SEQ_ID of the associated ADR or Runbook, if applicable.'
+      placeholder: "e.g., ADR-009"
+    validations:
+      required: true
+
+  - type: textarea
+    id: blast_radius
+    attributes:
+      label: 'The Blast Radius | AKA: What''s on the line?'
+      description: 'If this deployment fails catastrophically, what other services go down with it?'
+    validations:
+      required: true
+
+  - type: textarea
+    id: emergency_procedure
+    attributes:
+      label: 'The Emergency Procedure | AKA: Do you have a plan for when you mess up?'
+      description: 'Provide the step-by-step rollback plan.'
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: 'Acceptance Criteria (Binary) | AKA: Don''t invite the Yak'
+      description: 'How do I know this is 100% complete?'
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: pre_flight
+    attributes:
+      label: 'Prerequisites | AKA: Don''t just "wing it"'
+      options:
+        - label: 'Is the infrastructure currently at a stable baseline? (Do not build on broken infrastructure).'
+          required: true
+        - label: 'BTRFS/LVM fallback snapshots generated for target hosts.'
+          required: true
+        - label: 'SOPS encryption keys and required secrets staged.'
+          required: true
+
+  - type: checkboxes
+    id: certification
+    attributes:
+      label: 'The "And" Test & Certification | AKA: Beware the Yak.'
+      options:
+        - label: 'This feature achieves exactly ONE thing (The title does not contain "and").'
+          required: true
+        - label: 'I hereby certify I haven''t added another new feature and commit *not* to shave a Yak.'
+          required: true

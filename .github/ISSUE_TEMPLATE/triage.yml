@@ -1,0 +1,78 @@
+name: "Triage / Incident Fix"
+description: "Quell out the fire and return to baseline"
+title: "[Triage]: "
+labels: ["triage", "operations"]
+body:
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 'Severity'
+      description: 'Classify the operational impact.'
+      options:
+        - Critical (System Down)
+        - High (Service Impaired)
+        - Medium (Redundancy Lost)
+        - Low (Non-Critical Bug)
+    validations:
+      required: true
+
+  - type: input
+    id: services_impacted
+    attributes:
+      label: 'Services Impacted'
+      description: 'Target system, network segment, or workload.'
+      placeholder: "e.g., BTRBK backup pipeline, Arch bare-metal host"
+    validations:
+      required: true
+
+  - type: textarea
+    id: external_impact
+    attributes:
+      label: 'External Impact & Urgency | AKA: Who is screaming?'
+      description: 'What downstream services or operations are currently blocked or at risk because of this?'
+      placeholder: 'e.g., Main server OS instability imminent due to 100% disk utilization.'
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem_statement
+    attributes:
+      label: 'Problem statement | AKA: "What''s on fire?"'
+      description: 'Describe what is currently broken, not why.'
+    validations:
+      required: true
+
+  - type: textarea
+    id: restore_point
+    attributes:
+      label: 'Restore Point Objective | AKA: What constitutes "done"?'
+      description: 'What exact state are we returning to? (No net-new features allowed).'
+    validations:
+      required: true
+
+  - type: textarea
+    id: execution_checklist
+    attributes:
+      label: 'Execution Checklist | AKA: How do you get to "done"?'
+      description: 'Break this down into immediate stabilization, followed by the permanent fix.'
+      value: |
+        **Phase 1: Immediate Stabilization**
+        - [ ] (e.g., Manually delete stale backups to restore OS stability)
+
+        **Phase 2: Remediation**
+        - [ ]
+        - [ ]
+
+        **Phase 3: Validation & Handoff**
+        - [ ] Fix validated against the defined Restore Point Objective.
+        - [ ] Incident Report / Post-Mortem generated or updated.
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: certification
+    attributes:
+      label: 'Certification'
+      options:
+        - label: 'I hereby certify I haven''t added a new feature and commit *not* to shave a Yak (Otherwise, split it into a Feature issue immediately).'
+          required: true

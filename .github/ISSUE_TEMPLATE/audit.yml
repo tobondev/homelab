@@ -1,0 +1,53 @@
+name: "Routine Maintenance / Audit"
+description: "Scheduled operational hygiene and validation."
+title: "[Audit]: "
+labels: ["chore", "maintenance"]
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: 'Category'
+      description: 'Classify the nature of this audit.'
+      options:
+        - Routine Patching & Updates
+        - Security / Vulnerability Audit
+        - Configuration Drift Review
+        - Hardware / Storage Integrity
+    validations:
+      required: true
+
+  - type: textarea
+    id: audit_scope
+    attributes:
+      label: 'Audit Scope | AKA: Whose turn is it?'
+      description: 'What is being verified? (e.g., Six-Month LUKS Key Rotation, Q3 Backup Integrity).'
+    validations:
+      required: true
+
+  - type: textarea
+    id: execution_checklist
+    attributes:
+      label: 'Execution Checklist | AKA: How did I commit to validating this?'
+      description: 'List the specific steps required to complete this audit.'
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: handoff
+    attributes:
+      label: 'Handoff | AKA: Is anyone joining the party?'
+      description: 'Check these if follow-up work was discovered.'
+      options:
+        - label: 'Did this audit uncover a broken system? (If yes, open a Triage issue).'
+        - label: 'Did this audit uncover technical debt? (If yes, log it in the task manager).'
+
+  - type: checkboxes
+    id: certification
+    attributes:
+      label: 'Certification'
+      options:
+        - label: 'I hereby certify I haven''t added a new feature and commit *not* to shave a Yak.'
+          required: true
