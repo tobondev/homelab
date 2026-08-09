@@ -1,0 +1,53 @@
+name: "Documentation"
+description: "Drafting runbooks, ADRs, or system diagrams."
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: dropdown
+    id: doc_type
+    attributes:
+      label: 'Documentation Type'
+      description: 'Select the type of record.'
+      options:
+        - Architectural Decision Record
+        - Runbook
+        - Diagram
+        - Project Report
+        - Roadmap
+    validations:
+      required: true
+  - type: input
+    id: target_system
+    attributes:
+      label: 'Target Component | AKA: What are we explaining?'
+      description: 'The service or infrastructure requiring documentation.'
+      placeholder: "e.g., BTRBK systemd production deployment"
+    validations:
+      required: true
+
+  - type: textarea
+    id: docs_objective
+    attributes:
+      label: 'Documentation Objective | AKA: Why are we writing this?'
+      description: 'What operational gap does this file fill?'
+    validations:
+      required: true
+
+  - type: textarea
+    id: checklist
+    attributes:
+      label: 'Execution Checklist | AKA: The Table of Contents'
+      description: 'Break down the sections required to consider this document complete.'
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: certification
+    attributes:
+      label: 'Certification'
+      options:
+        - label: 'I hereby certify this task is strictly administrative and does not involve changing infrastructure, even if it describes a plan to do so.'
+          required: true

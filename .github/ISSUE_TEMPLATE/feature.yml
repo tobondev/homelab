@@ -27,6 +27,14 @@ body:
       required: true
 
   - type: textarea
+    id: debt_context
+    attributes:
+      label: 'The Goal | AKA: You get *one* wish.'
+      description: 'Explain the *one* this feature will change/improve. For related features, create a new issue.'
+    validations:
+      required: true
+
+  - type: textarea
     id: blast_radius
     attributes:
       label: 'The Blast Radius | AKA: What''s on the line?'

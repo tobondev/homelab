@@ -1,0 +1,48 @@
+name: "Technical Debt / Refactor"
+description: "Fixing non-critical bugs, hardcoded values, or messy scripts."
+title: "[Tech Debt]: "
+labels: ["tech-debt", "refactor"]
+body:
+  - type: input
+    id: target_component
+    attributes:
+      label: 'The Problem | AKA: The problem child'
+      description: 'Why did you start writing this issue? What''s the problem you can no longer tolerate?'
+      placeholder: "e.g., btrbk-deploy.sh script"
+    validations:
+      required: true
+
+  - type: textarea
+    id: debt_context
+    attributes:
+      label: 'The Last Straw | AKA: You get *one* wish.'
+      description: 'Explain *one* flaw, limitation, or silent failure risk. For related issues, create a new issue.'
+    validations:
+      required: true
+
+  - type: textarea
+    id: refactor_goal
+    attributes:
+      label: 'The MVP | AKA: How do I get rid of this thing?'
+      description: 'Define the precise transition from the current messy state to the clean state. Actionable and Measurable'
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: safe_execution
+    attributes:
+      label: 'Safe Execution | AKA: Don''t break production'
+      options:
+        - label: 'I will perform validation and iteration on a test VM or dry-run environment before touching production.'
+          required: true
+        - label: 'I will perform a version-controlled backup of the current state in production.'
+          required: true
+  - type: checkboxes
+    id: certification
+    attributes:
+      label: 'Certification | AKA: These are not the Yaks you''re looking for'
+      options:
+        - label: 'I hereby certify I am not adding a net-new feature, just cleaning up existing logic.'
+          required: true
+        - label: 'I commit to creating a "New Feature" issue should I find an improvement opportunity'
+          required: true
