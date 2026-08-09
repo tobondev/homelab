@@ -27,13 +27,14 @@ The volatility of the core OS requires an automated, highly responsive disaster 
 * **Known-Good Fallback:** Servers and workstations utilize a systemd-boot fallback snapshot integration. In the event of a system freeze or failed unattended reboot, hosts default to a known-good state for immediate recovery.
 * **Remote Decryption:** Early-boot networking assigns fixed IPs at the interface level to provide a fallback for DHCP failure during the initramfs phase. SSH-remote unlocking is handled via `tinyssh`, utilizing strictly separated SSH keys for disaster recovery versus standard remote access.
 
-## 4. Networking & Ingress
+## 4. Networking
 
-* **Layer 3 Centralization:** A dedicated OPNsense appliance handles centralized Layer 3 governance, utilizing strict firewall alias policies to block inter-VLAN routing by default.
-* **Zero-Trust Ingress:** External ingress is exclusively handled via Cloudflare Tunnels, completely eliminating traditional reverse proxies and forwarded ports on the edge router.
-* **IoT Isolation:** IoT devices reside in a restricted VLAN with WAN-only access. The architecture is currently transitioning toward a fully local, WAN-denied state managed entirely through Home Assistant.
+* **Layer 3 Centralization:** A dedicated OPNsense appliance handles Layer 3 governance, enforcing VLAN segmentation, authoritatively enforcing DNS over TLS (DoT), and limiting telemetry via DNS sinkholing.
+* **Secure Networking:** External ingress is handled via Cloudflare Tunnels, eliminating traditional reverse proxies and forwarded ports on the edge router, while Traefik provides TLS encryption for the internal services on the LAN.
+* **Wireless Mesh Networking:** B.A.T.M.A.N. ADV acts as a giant, wireless managed switch, connecting VLANS over the air, while maintaining AP isolation and maintaining a stable, fast mesh that is self-healing and smart-routing.
 
 ## 5. Workloads & Operations
 
-* **Declarative Migration:** Workloads are deployed via Docker Compose paired with BTRFS bind mounts, enabling atomic backups and easy lifecycle management.
-* **Secrets Management:** A locally hosted Vaultwarden instance acts as the centralized password and secret vault. Repository secrets and environment variables are actively being migrated to a fully version-controlled SOPS + age encryption pipeline, as seen in the backup deployment workflows.
+* **Infrastructure as Code:** Workloads are deployed via Docker Compose and configurations are standardized using Ansible.
+* **Secrets Management:** A locally hosted Vaultwarden instance acts as the centralized password and secret vault, including SOPS encryption keys for repository secrets.
+* **Security and Observability:** Grafana-based monitoring stack provides visibility, data correlation and alerting, while Wazuh XDR enables Active Response and File Integrity monitoring across Network Endpoints.
