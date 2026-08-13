@@ -6,6 +6,12 @@
   when: ansible_facts.os_family == "RedHat"
 
 - include_tasks:
+    file: "Suse.yml"
+    apply:
+      become: yes
+  when: ansible_facts.os_family == "Suse"
+
+- include_tasks:
     file: "Debian.yml"
     apply:
       become: yes
@@ -36,11 +42,11 @@
     cache_valid_time: 3600
   when:
     - ansible_facts.os_family|lower != "redhat"
+    - ansible_facts.os_family|lower != "suse"
     - not wazuh_custom_packages_installation_agent_enabled
     - not ansible_check_mode
   tags:
     - init
-
 - name: Linux | Check if client.keys exists
   stat:
     path: "{{ wazuh_dir }}/etc/client.keys"

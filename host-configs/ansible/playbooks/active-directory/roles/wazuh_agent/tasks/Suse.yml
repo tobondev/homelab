@@ -1,0 +1,13 @@
+---
+
+- name: Suse | Install Wazuh repo
+  community.general.zypper_repository:
+    name: wazuh_repo
+    description: Wazuh repository
+    repo: "{{ wazuh_agent_config.repo.yum }}"
+    gpgkey: "{{ wazuh_agent_config.repo.gpg }}"
+    gpgcheck: true
+    state: present
+  changed_when: false
+  when:
+    - not wazuh_custom_packages_installation_agent_enabled

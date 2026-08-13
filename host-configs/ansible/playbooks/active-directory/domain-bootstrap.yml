@@ -195,10 +195,10 @@
   tags: [always]
 
   roles:
-    #- role: grafana_alloy
-    #- role: wazuh_agent
+    - role: grafana_alloy
+    - role: wazuh_agent
     - role: domain_join
-    #- role: provision_dc
+    - role: provision_dc
   handlers:
     - import_tasks: "./handlers/main.yml"
   post_tasks:
