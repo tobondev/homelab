@@ -20,14 +20,17 @@
 
 ## 1. Execution Steps
 
-1. **[Step Name - e.g., Prepare Environment]:**
+### Phase 1: Preparation
+1. **[Step Name]:**
    `[exact command]`
    *(Expected output: [What should the operator see?])*
 
-2. **[Step Name - e.g., Execute Primary Action]:**
+### Phase 2: Execution
+2. **[Step Name]:**
    `[exact command]`
    *(Expected output: [What should the operator see?])*
 
+### Service Restarts
 > **Dependency & Restart Matrix:**
 > *Match the target system/package to the table below and execute the corresponding command to apply changes.*
 > 
@@ -38,16 +41,22 @@
 > | **Isolated / No Dependency** | *No restart required.* | N/A |
 
 ## 2. Verification
-*How do you prove the runbook worked?*
 
+### State Confirmation
 - `[exact command]` (Confirm the intended state is achieved).
+
+### Log Validation
 - `[exact log path or tail command]` (Confirm no errors are actively triggering).
 
 ## 3. Rollback Plan
+
 *If the execution causes system instability or fails to resolve the trigger:*
 
+### Rollback Execution
 1. `[exact rollback command 1]`
 2. `[exact rollback command 2]`
+
+### Rollback Verification
 3. Verify rollback: `[exact command]` *(Expected: System returns to previous known-good state).*
 
 **Estimated RTO:** [e.g., 5 minutes].
@@ -55,12 +64,15 @@
 ## 4. Post-Ops
 *Administrative cleanup and follow-up.*
 
+### Administrative Cleanup
 - [ ] [e.g., Re-enable alerts, update ticket, link remediation record ID].
 - [ ] [e.g., Remove 'Next Boot' flags from pre-patch snapshots].
 
 ## 5. Lifecycle / Normalization (Optional)
-*Execute this workflow when the system is ready to be restored to its standard lifecycle (e.g., an official patch is released, replacing a temporary custom fix).*
 
+*Execute this workflow when the system is ready to be restored to its standard lifecycle (e.g., an official patch is released).*
+
+### Normalization Steps
 1. **[Step Name]:** `[exact command]`
 2. **[Step Name]:** `[exact command]`
 
