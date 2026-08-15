@@ -4,6 +4,7 @@ http:
       ipAllowList:
         sourceRange:
           - '{{ env "LAN_VLAN" }}'
+          - '{{ env "CLOUDFLARE_TUNNEL" }}'
     tv-only:
       ipAllowList:
         sourceRange:
