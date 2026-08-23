@@ -9,7 +9,7 @@
       - oddjob-mkhomedir
       - sssd-ad
       - adcli
-      - krb5-user
+      - krb5
   block:
     - name: Pre-Flight Check - Ensure Security & Observability Agents are Active
       when: "'join-only' not in ansible_run_tags"
@@ -50,6 +50,12 @@
           when: ansible_os_family == 'Debian'
           ansible.builtin.package:
             name: "{{ domain_packages + 'krb5-user' + (['libsss-sudo'] if sudo_governance == 'schema' else []) }}"
+            state: latest
+        - name: Install Domain-Join Required Packages
+          when: ansible_os_family == 'Suse'
+          ansible.builtin.package:
+            # Suse's sssd package contains sssd-sudo by default.
+            name: "{{ domain_packages + 'krb5-client' }}"
             state: latest
         # -----------------------------------------------------------------------
         # Join Domain

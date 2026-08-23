@@ -1,0 +1,70 @@
+# smb.conf is the main Samba configuration file. see man smb.conf
+# for full details.
+[global]
+        workgroup = {{ domain_netbios }}
+        realm = {{ domain_name | upper }}
+        name resolve order = bcast host lmhosts wins
+        password server = *
+        security = ads
+        kerberos method = secrets and keytab
+        preferred master = No
+        domain master = No
+        passdb backend = tdbsam
+        printing = cups
+        printcap name = cups
+        printcap cache time = 750
+        cups options = raw
+        map to guest = Bad User
+        logon path = \\%L\profiles\.msprofile
+        logon home = \\%L\%U\.9xprofile
+        logon drive = P:
+        unix extensions = Yes
+        winbind use default domain = yes
+[homes]
+        comment = Home Directories
+        valid users = %S, %D%w%S
+        browseable = No
+        read only = No
+        inherit acls = Yes
+[profiles]
+        comment = Network Profiles Service
+        path = %H
+        read only = No
+        store dos attributes = Yes
+        create mask = 0600
+        directory mask = 0700
+{% for share in ad_shares %}
+[{{ share.name }}]
+        path = {{ share.path }}
+        comment = {{ share.comment }}
+        writeable = {{ share.writeable | default('no') }}
+        write list = {{ share.write_list }}
+        guest ok = {{ share.guest_ok | default('no') }}
+        valid users = {{ share.valid_users }}
+        inherit acls = {{ share.inherit_acls | default('yes') }}
+        access based share enum = {{ share.access_based_share_enum | default('yes') }}
+        {% if 'vfs_objects' in share %}
+        vfs objects = {{ share.vfs_objects }}
+        {% endif %}
+        {% if 'full_audit_prefix' in share %}
+        full_audit:prefix = {{ share.full_audit_prefix }}
+        {% endif %}
+        {% if 'hide_unreadable' in share %}
+        hide unreadable = {{ share.hide_unreadable }}
+        {% endif %}
+        {% if 'force_create_mode' in share %}
+        force create mode = {{ share.force_create_mode }}
+        {% endif %}
+        {% if 'create_mask' in share %}
+        create mask = {{ share.create_mask }}
+        {% endif %}
+        {% if 'aio_read_size' in share %}
+        aio read size = {{ share.aio_read_size }}
+        {% endif %}
+        {% if 'aio_write_size' in share %}
+        aio write size = {{ share.aio_write_size }}
+        {% endif %}
+        {% if 'getwd_cache' in share %}
+        getwd cache = {{ share.getwd_cache }}
+        {% endif %}
+{% endfor %}

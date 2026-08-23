@@ -1,0 +1,48 @@
+---
+- name: Samba Server Provisioning
+  when: "'samba_provisioning' in ansible_run_tags and computer_role == 'server' and ansible_facts['os_family'] != 'Windows'"
+  block:
+    - name: Define Samba Name for RPM Distributions
+      when: "ansible_facts['os_family'] == 'RedHat' or ansible_facts['os_family'] == 'Suse'"
+      set_fact:
+        smb_service: "smb"
+    - name: Define Samba Name for non-RPM Distributions
+      when: "ansible_facts['os_family'] == 'Debian' or ansible_facts['os_family'] == 'Ubuntu'"
+      set_fact:
+        smb_service: "smbd"
+
+    - name: OpenSuse Tasks
+      when: "ansible_facts['os_family'] == 'Suse'"
+      block:
+      - name: Install Samba Packages
+        community.general.zypper:
+          name: samba
+          state: latest
+    - name: Non-Suse Tasks
+      when: "ansible_facts['os_family'] != 'Suse'"
+      block:
+        - name: Install Samba Packages
+          ansible.builtin.package:
+            name: samba
+            state: latest
+    - name: Samba Server Definition
+      block:
+        - name: render_template
+          template:
+            src: ./templates/smb.conf.j2
+            dest: "/etc/samba/smb.conf"
+          become: true
+          tags: [always]
+        - name: Create Samba Directories
+          ansible.builtin.file:
+            path: "{{ item.path }}"
+            state: directory
+            owner: root
+            group: root
+            mode: '0777'
+          loop: "{{ ad_shares }}"
+        - name: Enable Samba Service
+          ansible.builtin.service:
+            name: "{{ smb_service }}"
+            enabled: true
+            state: "started"

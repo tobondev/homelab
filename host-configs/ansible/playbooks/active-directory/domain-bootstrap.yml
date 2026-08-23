@@ -45,6 +45,7 @@
     - include_vars: "vars/main.yml"
     - include_vars: "vars/sudo_roles.yml"
     - include_vars: "vars/ou_structure.yml"
+    - include_vars: "vars/fileshares.yml"
     - name: Non-DC Hostname Check
       when: "computer_role != 'domain_controller'"
       block:
@@ -199,6 +200,7 @@
     - role: wazuh_agent
     - role: domain_join
     - role: provision_dc
+    - role: samba_server
   handlers:
     - import_tasks: "./handlers/main.yml"
   post_tasks:

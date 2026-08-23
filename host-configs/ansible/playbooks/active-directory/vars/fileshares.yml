@@ -1,0 +1,101 @@
+ad_shares:
+  - name: company_public
+    path: "/srv/samba/company_public"
+    comment: "Company Public Share"
+    writeable: "no"
+    write_list: "+hr@tobon.dev, +communications@tobon.dev"
+    guest_ok: "no"
+    valid_users: +employees@tobon.dev
+    inherit_acls: "yes"
+    access_based_share_enum: "yes"
+
+  - name: it_infrastructure
+    path: "/srv/samba/it_infrastructure"
+    comment: "IT Infrastructure Share"
+    writeable: "no"
+    write_list: "+itoperations@tobon.dev, +linuxadmins@tobon.dev, +networkengineers@tobon.dev"
+    guest_ok: "no"
+    valid_users: "+tier1support@tobon.dev, +itoperations@tobon.dev, +linuxadmins@tobon.dev, +networkengineers@tobon.dev"
+    inherit_acls: "yes"
+    vfs_objects: "full_audit"
+    full_audit_prefix: "%u|%I|%m|%S"
+    access_based_share_enum: "yes"
+    hide_unreadable: "yes"
+
+  - name: dev_release
+    path: "/srv/samba/dev_release"
+    comment: "Development Releases & QA Share"
+    writeable: "no"
+    write_list: "+engineering@tobon.dev, +devops@tobon.dev, +webserveradmins@tobon.dev"
+    guest_ok: "no"
+    valid_users: "+qa@tobon.dev, +infosec@tobon.dev, +engineering@tobon.dev, +devops@tobon.dev, +webserveradmins@tobon.dev"
+    inherit_acls: "yes"
+    vfs_objects: "full_audit"
+    full_audit_prefix: "%u|%I|%m|%S"
+    access_based_share_enum: "yes"
+
+  - name: finance_ledger
+    path: "/srv/samba/finance_ledger"
+    comment: "Finance Ledger Share"
+    writeable: "no"
+    write_list: +finance@tobon.dev, +accounting@tobon.dev
+    guest_ok: "no"
+    valid_users: +executive@tobon.dev, +auditaccess@tobon.dev, +finance@tobon.dev, +accounting@tobon.dev
+    inherit_acls: "yes"
+    vfs_objects: "full_audit"
+    full_audit_prefix: "%u|%I|%m|%S"
+    access_based_share_enum: "yes"
+    hide_unreadable: "yes"
+
+  - name: payroll_secure
+    path: "/srv/samba/payroll_secure"
+    comment: "Payroll Share"
+    writeable: "no"
+    access_based_share_enum: "yes"
+    write_list: +payrollmanagers@tobon.dev
+    guest_ok: "no"
+    valid_users: +payrollmanagers@tobon.dev
+    inherit_acls: "yes"
+    vfs_objects: "full_audit"
+    full_audit_prefix: "%u|%I|%m|%S"
+    hide_unreadable: "yes"
+
+  - name: media_vault
+    path: "/srv/samba/media_vault"
+    comment: "Communications & Marketing Media Share"
+    writeable: "no"
+    write_list: "+mediaproduction@tobon.dev, +medianetworkshare@tobon.dev"
+    guest_ok: "no"
+    valid_users: "+marketing@tobon.dev, +communications@tobon.dev, +mediaproduction@tobon.dev, +medianetworkshare@tobon.dev"
+    inherit_acls: "yes"
+    access_based_share_enum: "yes"
+    aio_read_size: 131072
+    aio_write_size: 131072
+    getwd_cache: "yes"
+
+  - name: security_audits
+    path: "/srv/samba/security_audits"
+    comment: "Security Audits and Reports Share"
+    writeable: "no"
+    write_list: +infosec@tobon.dev, +securityengineers@tobon.dev
+    guest_ok: "no"
+    valid_users: +executive@tobon.dev, +auditaccess@tobon.dev, +infosec@tobon.dev, +securityengineers@tobon.dev
+    inherit_acls: "yes"
+    vfs_objects: "full_audit"
+    full_audit_prefix: "%u|%I|%m|%S"
+    access_based_share_enum: "yes"
+    hide_unreadable: "yes"
+    force_create_mode: 0444
+    create_mask: 0444
+
+  - name: cloud_configs
+    path: "/srv/samba/cloud_configs"
+    comment: "CI-CD Cloud Configs Share"
+    writeable: "no"
+    write_list: "+cloudadmins@tobon.dev, +systemengineers@tobon.dev"
+    guest_ok: "no"
+    valid_users: "+devops@tobon.dev, +cloudadmins@tobon.dev, +systemengineers@tobon.dev"
+    inherit_acls: "yes"
+    access_based_share_enum: "yes"
+    vfs_objects: "full_audit"
+    full_audit_prefix: "%u|%I|%m|%S"
