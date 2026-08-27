@@ -1,8 +1,8 @@
-# Homelab Engineering & Operations
+# Homelab Infrastructure & Operations
 
 ## Overview
 
-This repository documents the architecture, operations, and security engineering decisions behind a production-grade homelab I design, operate, and maintain independently. It reflects the kind of work I do: structured change management, documented incident response, automated disaster recovery, and deliberate security architecture across a segmented multi-VLAN environment.
+This repository documents the architecture, operations, and design decisions for the environment I operate in my lab. It reflects the kind of work I do: structured change management, documented incident response, automated disaster recovery, and deliberate security architecture across a segmented multi-VLAN environment.
 
 Everything here is real infrastructure. The ADRs were written before or during implementation. The incident reports reflect actual failures and recoveries. The operations logs include timing data from actual deployments.
 
@@ -32,10 +32,73 @@ The documentation here reflects two distinct phases of the project:
 
 ### Network Security & Segmentation
 
+
+```mermaid
+graph TD
+    %% Core Infrastructure
+    WAN(WAN) --> Modem[ISP Modem]
+    Modem --> OPNsense
+
+
+    %% Routing to VLANs
+    OPNsense --> LAN_Vlan
+    OPNsense --> NoTrust
+    OPNsense --> IsolatedInfra
+
+    %% VLAN Definitions
+    subgraph CTRL_VLAN [CTRL VLAN]
+    direction LR
+        subgraph OPNsense[OPNsense]
+        Firewall[Firewall, IPS, IDS, DNS]
+        end
+        APs{APs}
+    end
+    subgraph LAN_Vlan [LAN VLAN]
+        direction TD
+        subgraph Srv[Main Server]
+        Services[SIEM, Home Assistant, Traefik, Grafana, nginx]
+        end
+        subgraph MiniSrv[Lightweight Server]
+        LightServices[SAMBA, BTRBK, IPMI Backend, Ghost]
+        end
+        subgraph LanClients[Clients]
+        WS{{Workstation}}
+        Lap{{Laptops}}
+        Mob{{Phones}}
+        end
+    end
+    subgraph NoTrust [No Trust Group]
+            direction LR
+            Guest[[Guest VLAN]]
+            TVs[[TV VLAN]]
+            IOT[[IOT VLAN]]
+        end
+    subgraph IsolatedInfra [Isolated Infra Group]
+        direction TD
+        subgraph AD_VLAN [Active Directory VLAN]
+            subgraph DCs [DCs]
+                Core([Server Core])
+                Gui([Server GUI])
+            end
+            subgraph Clients[Clients]
+                Windows{{Windows}}
+                Linux{{Linux}}
+            end
+            subgraph Servers[Servers]
+                SAMBAServer([SAMBA Server])
+                nginxServer([nginx Server])
+            end
+        DCs --> Servers
+        DCs --> Clients
+        end
+    end
+
+```
+
 - **Edge Routing & Firewall:** Dedicated OPNsense appliance for centralized Layer 3 governance, enforcing strict firewall rules, alias-based inter-VLAN blocking, and comprehensive logging
-- **VLAN Segmentation:** Isolated topologies for IoT, guest, smart TV, AD domain, and core infrastructure. Untrusted devices have no lateral movement path to operational systems.
+- **VLAN Segmentation:** Isolated topologies for IoT, guest, smart TV, AD domain, and core infrastructure. Untrusted devices have no lateral movement, and temporary AD Services are segmented away from production systems.
 - **Wireless Mesh:** Layer 2 backbone via `batman-adv` on OpenWRT nodes, structurally decoupled from Layer 3. DHCP and routing remain solely on OPNsense. Mesh nodes are WAN-denied and only reachable in the control plane at L3. Provisioned and hardened via Ansible.
-- **Reverse Proxy & TLS:** Traefik handles internal SSL termination via Let's Encrypt DNS-01 wildcard certificates. A `socat` systemd service bridges KVM MacVTap interfaces for VMs that require proxy routing without LAN-level plain HTTP exposure.
+- **Reverse Proxy & TLS:** Traefik handles internal SSL termination via Let's Encrypt DNS-01 wildcard certificates. A `socat` systemd service bridges KVM MacVTap interfaces for VMs in the Traefik host.
 - **Zero-Trust Ingress:** All external access is routed through Cloudflare Tunnels. No inbound ports are open to the WAN.
 
 ### Observability & Security Monitoring
@@ -89,7 +152,7 @@ environment is torn down and rebuilt for the next.
 
 I ran into documentation friction early in the lifecycle of this repository. The context switch between executing complex terminal operations and retroactively writing down what happened meant I was either moving too slow or my notes were incomplete. The gap between "knowing what I did" and "proving what I did" was too wide.
 
-To permanently solve this, I built `Journal Helper`: a custom Bash-based documentation pipeline that wraps terminal sessions in `script(1)`, injects a `note()` function for real-time phase annotation, and runs a sequenced `perl`/`col` parsing pipeline on exit to strip ANSI noise and inject a phase-separated transcript directly into templated Markdown. The template engine auto-discovers entry types, generates sequential IDs for ADRs and runbooks, expands template variables, and self-maintains an ADR index.
+To solve this, I built `Journal Helper`: a custom Bash-based documentation pipeline that wraps terminal sessions in `script(1)`, injects a `note()` function for real-time phase annotation, and runs a sequenced `perl`/`col` parsing pipeline on exit to strip ANSI noise and inject a phase-separated transcript directly into templated Markdown. The template engine auto-discovers entry types, generates sequential IDs for ADRs and runbooks, expands template variables, and self-maintains an [ADR index](docs/adr-index.md).
 
 The output of this pipeline is the documentation you are reading. Every operations log and incident report in this repository was produced this way: exact terminal output, not reconstruction from memory.
 
