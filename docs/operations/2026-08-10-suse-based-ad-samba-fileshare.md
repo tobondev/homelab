@@ -6,7 +6,7 @@
 
 **Category:** Architecture
 
-**Status:**  In Progress
+**Status:**  Completed
 
 ---
 

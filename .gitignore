@@ -10,3 +10,5 @@ host-configs/ansible/playbooks/openwrt/keys/*
 docker/observability/grafanaloki/alloy/GeoLite2-City.mmdb
 # Filter current commit draft.
 .current-commit.draft
+
+.DS_Store
