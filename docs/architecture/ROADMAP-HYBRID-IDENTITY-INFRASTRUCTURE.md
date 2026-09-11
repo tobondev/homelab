@@ -2,7 +2,7 @@
 **Status:** In Progress — Stage 2 Complete, Stage 3 Planning
 **Note:** This document outlines a planned engineering initiative to extend the infrastructure detailed in `CURRENT-STATE.md`. It functions as a living project plan and will be iteratively updated, and eventually superseded by formalized Architectural Decision Records (ADRs) and Runbooks as deployment stages are completed.
 **Owner:** @tobondev
-**Updated:** 2026-05-26
+**Updated:** 2026-09-10
 
 ---
 
@@ -29,7 +29,7 @@ Two constraints shape the overall approach and are worth stating explicitly befo
 ## Stage 1: Isolated GUI Sandbox
 
 **Goal:** Understand the Windows Server operational model through direct, GUI-driven interaction with no exposure to the primary network. Develop and validate a foundational PowerShell user provisioning capability.
-**Status:** Completed. (2026-05-08)
+**Status:** Completed. [2026-05-08]
 
 ### Architecture
 
@@ -51,7 +51,7 @@ This environment is ephemeral. The VMs are rebuilt from scratch, the provisionin
 ## Stage 2: Production Integration
 
 **Goal:** Deploy Active Directory as a code-defined, observable service integrated with the existing production infrastructure, using enterprise-standard Server Core and a declarative JSON provisioning schema.
-**Status:** Completed. (2026-05-26)
+**Status:** Completed. [2026-05-26]
 
 ### Architecture
 
@@ -77,20 +77,20 @@ The original scope for Stage 2 included leveraging the constraints of the 180-da
 
 ---
 
-## Stage 3: Cloud Bridge [POSTPONED after Stage 5]
+## Stage 3: Cloud Bridge
 
 **Goal:** Synchronize the on-premise domain with a Microsoft 365 cloud tenant to establish and document a hybrid identity architecture.
-**Status:** Planned
+**Status:** Completed [2026-09-10]
 
 ### Architecture
 
-Integration of the local AD domain with a Microsoft 365 Business Premium 30-day free trial. This provides the Entra ID P1 licensing required to run SSO and conditional access. `Entra ID Connect` (formerly Azure AD Connect) is deployed on the Domain Controller to synchronize PowerShell-provisioned on-premise users to the cloud directory.
+Integration of the local AD domain with free Microsoft Entra ID account. This provides the Entra ID licensing required to run SSO. `Entra Cloud Sync` is deployed on the Domain Controller to synchronize PowerShell-provisioned on-premise users to the cloud directory. Conditional access is not a part of this deployment, since it requires a P1 license (acquired via trial). This will be done at a later stage, as part of a larger Intune project, to maximize the utility of the license trial.
 
 ### Objectives
 
-- Configure `Entra ID Connect` with delta sync enabled and validate that on-premise user creation propagates to the cloud directory within the expected sync window.
+- Configure `Entra Cloud Sync` and validate that on-premise user creation propagates to the cloud directory within the expected sync window.
 - Demonstrate `SSO` capability for an Entra-enrolled user.
-- Document the `Entra ID Connect` installation, `UPN suffix` configuration, and delta sync operational procedure as a runbook with a timed, step-by-step execution record.
+- Document the `Entra Cloud Sync` installation and `UPN suffix` configuration in an Operations Log with a detailed, step-by-step execution record.
 
 ---
 

@@ -10,7 +10,6 @@
         domain_mode: Win2025
         dns_domain_name: "{{ domain_name }}"
         safe_mode_password: "{{ offline_password }}"
-        replication_source_dc: "{{ groups['domain_controllers'][0] }}"
         install_dns: true
         create_dns_delegation: false
         database_path: C:\Windows\NTDS

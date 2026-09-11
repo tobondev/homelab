@@ -21,7 +21,7 @@ $departments = @(
     # Technology & Engineering
     @{
         Dept   = "IT Operations"
-        Titles = @("Systems Administrator", "Network Engineer", "Helpdesk Technician")
+        Titles = @("Systems Administrator", "Network Engineer", "Helpdesk Technician", "Helpdesk Manager")
         Groups = @("ITOperations", "Employees")
     },
 
@@ -141,6 +141,7 @@ $specialGroupsByTitle = @{
     "Full Stack Engineer"            = @("LinuxAdmins","WebServerAdmins")
     "Cloud Architect"                = @("CloudAdmins")
     "Payroll Specialist"             = @("PayrollManagers")
+    "Helpdesk Manager"               = @("HelpdeskAdmins")
 }
 
 Write-Host "Generating 1,000 AD users for load testing..." -ForegroundColor Cyan

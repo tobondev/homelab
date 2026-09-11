@@ -10,6 +10,7 @@ not_become: ENC[AES256_GCM,data:1j+xzfQ=,iv:hF7SjHfQc41DigVLJ3TDX6ZUtlZyxMJXrUWm
 windows_become: ENC[AES256_GCM,data:J22Jzio=,iv:dRfsuGjNBht1zklYvu72wuCKSkKzbweXLbnFQBmKZxQ=,tag:wYSyDzMfdLp2eynnyDAz1Q==,type:str]
 windows_become_user: ENC[AES256_GCM,data:dpllgIZ3tROtER1yEg==,iv:XxvPUo9tb0Uansi35ezrqALrKy4kCk5EC63Fn+T+02I=,tag:gL+ynF49EW/E/xHk/8ss3w==,type:str]
 computer_role: ENC[AES256_GCM,data:63Gdwh4tNEf4qVX3MkqRIxU=,iv:56WLuDumhpMPfGcrGPEgqmdArJIsewlLZv2RDvTN6YM=,tag:uyu5JC9+CTI5PwjPn175Fg==,type:str]
+computer_ou: ENC[AES256_GCM,data:+0EHUndvS06elxlVkF1C2eHoXiA3uojnIPGRW0/VNBFkmpQHRlnqWGkXeGi1PhjXlwdxdsI15SRL2P6Ode8=,iv:9wGysoG1HH3j6TIJW6aH2P6BnqT+Sn7JJOY7FS5NBw4=,tag:b7TFnvdamfyRhjZooxVNhw==,type:str]
 sops:
     age:
         - enc: |
@@ -21,7 +22,7 @@ sops:
             qA701uG3k8in1FxjiRB9RtWRi6XXeI3dqIQcoVRuJybmO5TYw3gqrw==
             -----END AGE ENCRYPTED FILE-----
           recipient: age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw
-    lastmodified: "2026-07-31T04:01:43Z"
-    mac: ENC[AES256_GCM,data:iy08HV7Fb1t5RiPJ5rnxVI06/5ik+YOjVbiGdXo6q+Ufpg6lqZMiNhZH/EOLwIxEe6QJQhqgo1YkmwbkiwopP+CwoAQlPKN1wXCjOqXZFz37ajHGXBcDGWgKgTg/CNOuGRQ3klnPA/Qi15ull7Nnszv+HDTD8/f9IYAbK/XzHvY=,iv:gYRfAKfH4Ldvp17Qa9/Dqf5x8VexcFTD0M2Q0ipR5dM=,tag:P8RmeqV7ZuyAoP2X76r3yg==,type:str]
+    lastmodified: "2026-09-05T14:15:03Z"
+    mac: ENC[AES256_GCM,data:e0MFw88WaEfNuU6aSJqY35zhDPGqRO8k7VpNdcwDBNKEeMD0lSv5Lw5Q1cvDgo6QufW1ISZ7k15brsoRm2diJkcuyPfolYeIyCOV+lEXo2jpHFZ4kyohSkb8tp/ZUgPtkPJX3xLwAPoIVc+6T5qvvMWSPSJnDmSCFbGd08tgNr8=,iv:lmZZBF3lO6VpyWH5UWooucDGzoC/pTlUUvlnOHTI4VY=,tag:3PMuMAYROq2o/4VTSU6jZg==,type:str]
     unencrypted_suffix: _unencrypted
-    version: 3.13.2
+    version: 3.13.3

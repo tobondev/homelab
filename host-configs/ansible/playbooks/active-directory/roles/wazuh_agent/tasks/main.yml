@@ -19,16 +19,16 @@
   when: wazuh_agent_config_overlay | bool
 
 - include_tasks: "Windows.yml"
-  when: ansible_facts.os_family == "Windows"
+  when: ansible_facts.os_family == "Windows and 'join-only' not in ansible_run_tags"
 
 - include_tasks:
     file: "Linux.yml"
     apply:
       become: yes
-  when: ansible_facts.system == "Linux"
+  when: ansible_facts.system == "Linux and 'join-only' not in ansible_run_tags"
 
 - include_tasks:
     file: "macOS.yml"
     apply:
       become: yes
-  when: ansible_facts.system == "Darwin"
+  when: ansible_facts.system == "Darwin and 'join-only' not in ansible_run_tags"

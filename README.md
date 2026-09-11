@@ -137,7 +137,7 @@ environment is torn down and rebuilt for the next.
 |-------|-------------|--------|
 | 1 | Isolated GUI sandbox — foundational AD knowledge, PowerShell provisioning baseline | Complete |
 | 2 | Production integration — Server Core DC, declarative JSON provisioning, Grafana telemetry | Complete |
-| 3 | EntraID Cloud Bridge — SSO and Conditional Access via Microsoft 365 tenant | Planned |
+| 3 | EntraID Cloud Bridge — SSO and Cloud Sync | Complete |
 | 4 | Cross-OS domain integration — RHEL and Debian endpoints joined via Ansible, AD schema sudo governance, dual DC, Kerberos TGT validation pipeline | Complete |
 | 5 | Offensive security & defensive analysis — Bloodhound, Kerberoasting, password spraying; Wazuh as detection layer for real attack telemetry | Active |
 
@@ -166,16 +166,8 @@ Source: [`scripts/utils/journal-helper/`](scripts/utils/journal-helper)
 
 ---
 
-## Planned
-
-- **EntraID Cloud Bridge** — Synchronizing the on-premise AD domain with a Microsoft 365 Entra ID
-  tenant to validate SSO, delta syncs, and Conditional Access paths. (HIIP Stage 3)
-
----
-
 ## Contact
 
 - **Portfolio:** [tobon.dev](https://tobon.dev)
 - **Email:** [marcos@tobon.dev](mailto:marcos@tobon.dev)
 - **LinkedIn:** [Marcos Tobon](https://tobon.dev/linkedin)
-- **GitHub:** [github.com/tobondev](https://tobon.dev/github)
