@@ -1,26 +1,26 @@
 networks:
-  it-tools:
+  ittools:
   proxy_web:
     external: true
 services:
-  it-tools:
-    container_name: it-tools
-    image: corentinth/it-tools:latest
+  ittools:
+    container_name: ittools
+    image: corentinth/ittools:latest
     labels:
       # Tell Traefik to expose this container
       - "traefik.enable=true"
       # Route configuration
-      - "traefik.http.routers.it-tools.rule=Host(`it-tools.${DOMAIN}`)"
-      - "traefik.http.routers.it-tools.entrypoints=websecure"
+      - "traefik.http.routers.ittools.rule=Host(`ittools.${DOMAIN}`)"
+      - "traefik.http.routers.ittools.entrypoints=websecure"
       # SSL/TLS configuration telling Let's Encrypt to secure it
-      - "traefik.http.routers.it-tools.tls=true"
-      - "traefik.http.routers.it-tools.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.it-tools.middlewares=secure-only@file"
+      - "traefik.http.routers.ittools.tls=true"
+      - "traefik.http.routers.ittools.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.ittools.middlewares=authentik@file"
       # Network specification
       - "traefik.docker.network=proxy_web"
 
     networks:
       - proxy_web
-      - it-tools
+      - ittools
 # Dynamically construct nested paths for volumes
     restart: always

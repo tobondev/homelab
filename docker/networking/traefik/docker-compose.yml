@@ -19,6 +19,7 @@ services:
       - "--providers.docker.endpoint=tcp://dockerproxy:2375"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.ldaps.address=:636"
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
       - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,1.0.0.1:53"
@@ -31,7 +32,9 @@ services:
     environment:
       - CF_DNS_API_TOKEN
       - DOMAIN=${DOMAIN}
+      - OPNSENSE_IP=${OPNSENSE_IP}
       - HOMEASSISTANT_IP=${HOMEASSISTANT_IP}
+      - JELLYFIN=${JELLYFIN}
       - CLOUDFLARE_TUNNEL=${CLOUDFLARE_TUNNEL}
       - LAN_VLAN=${LAN_VLAN}
       - TV_VLAN=${TV_VLAN}
@@ -39,6 +42,7 @@ services:
       - IOT_VLAN=${IOT_VLAN}
       - MESHCOMMANDER_IP=${MESHCOMMANDER_IP}
       - NANOKVM_IP=${NANOKVM_IP}
+      - OWNCLOUD_IP=${OWNCLOUD_IP}
       - SERVER_COCKPIT_IP=${SERVER_COCKPIT_IP}
       - LAB_COCKPIT_IP=${LAB_COCKPIT_IP}
 
@@ -49,6 +53,7 @@ services:
       - "traefik.http.routers.traefik-dash.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.traefik-dash.service=api@internal"
       - "traefik.http.routers.traefik-dash.entrypoints=websecure"
+      - "traefik.http.routers.traefik-dash.middlewares=authentik@file,trusted-only@file"
       - "traefik.http.routers.traefik-dash.tls=true"
       - "traefik.http.routers.traefik-dash.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik-dash.tls.domains[0].main=${DOMAIN}"
@@ -57,6 +62,7 @@ services:
     ports:
       - "${HTTRAEFIK}:80"
       - "${HTTRAEFIKS}:443"
+      - "${LDTRAEFIKS}:636"
     volumes:
       - "${TRAEFIK_LESTENCRYPT}:/letsencrypt"
       - "${DYNAMIC_CONF}:/dynamic_conf:ro"
@@ -67,6 +73,24 @@ services:
     networks:
       - traefiknet
       - proxy_web
+  certs-dumper:
+    image: ldez/traefik-certs-dumper:latest
+    container_name: traefik-certs-dumper
+    restart: unless-stopped
+    command: >
+      file --watch --version v2
+      --source /letsencrypt/acme.json
+      --dest /certs
+      --domain-subdir
+      --crt-name fullchain --crt-ext .pem
+      --key-name privkey --key-ext .pem
+    environment:
+      - "DOMAIN=${DOMAIN}"
+      - "OVERRIDE_UID=${UID}"
+      - "OVERRIDE_GID=${GID}"
+    volumes:
+      - "${TRAEFIK_LESTENCRYPT}:/letsencrypt:ro"
+      - "${AUTHENTIK_CERTS}:/certs"
 
   dockerproxy:
     image: tecnativa/docker-socket-proxy:latest

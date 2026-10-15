@@ -1,0 +1,113 @@
+services:
+  postgresql:
+    container_name: authentik-postgresql
+    env_file:
+    - .env
+    environment:
+      POSTGRES_DB: ${PG_DB:-authentik}
+      POSTGRES_PASSWORD: ${PG_PASS:?database password required}
+      POSTGRES_USER: ${PG_USER:-authentik}
+    healthcheck:
+      interval: 30s
+      retries: 5
+      start_period: 20s
+      test:
+      - CMD-SHELL
+      - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+      timeout: 5s
+    image: docker.io/library/postgres:16-alpine
+    restart: unless-stopped
+    volumes:
+    - ${AUTHENTIK_DATABASE}:/var/lib/postgresql/data
+    networks:
+      - authentik
+  server:
+    container_name: authentik-server
+    command: server
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    env_file:
+    - .env
+    environment:
+     - AUTHENTIK_POSTGRESQL__HOST=postgresql
+     - AUTHENTIK_POSTGRESQL__NAME=${PG_DB}
+     - AUTHENTIK_POSTGRESQL__PASSWORD=${PG_PASS}
+     - AUTHENTIK_POSTGRESQL__USER=${PG_USER}
+     - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
+     - AUTHENTIK_ERROR_REPORTING__ENABLED=true
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2026.8.3}
+    restart: unless-stopped
+    shm_size: 512mb
+    volumes:
+    - ${AUTHENTIK_DATA}:/data
+    - ${AUTHENTIK_CUSTOM_TEMPLATES}:/templates
+    labels:
+      # Tell Traefik to expose this container
+      - "traefik.enable=true"
+      # Route configuration
+      - "traefik.http.routers.authentik.rule=Host(`authentik.${DOMAIN}`)"
+      - "traefik.http.routers.authentik.entrypoints=websecure"
+      # SSL/TLS configuration telling Let's Encrypt to secure it
+      - "traefik.http.routers.authentik.middlewares=trusted-services@file"
+      - "traefik.http.routers.authentik.tls=true"
+      - "traefik.http.routers.authentik.tls.certresolver=letsencrypt"
+      - "traefik.http.services.authentik.loadBalancer.server.port=9000"
+      # Network specification
+      - "traefik.docker.network=proxy_web"
+    networks:
+      - authentik
+      - proxy_web
+  worker:
+    container_name: authentik-worker
+    command: worker
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    env_file:
+    - .env
+    environment:
+     - AUTHENTIK_POSTGRESQL__HOST=postgresql
+     - AUTHENTIK_POSTGRESQL__NAME=${PG_DB}
+     - AUTHENTIK_POSTGRESQL__PASSWORD=${PG_PASS}
+     - AUTHENTIK_POSTGRESQL__USER=${PG_USER}
+     - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
+    image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2026.8.3}
+    restart: unless-stopped
+    shm_size: 512mb
+    volumes:
+    - ${AUTHENTIK_DATA}:/data
+    - ${AUTHENTIK_CERTS}:/certs:ro
+    - ${AUTHENTIK_CUSTOM_TEMPLATES}:/templates:ro
+    networks:
+      - authentik
+  ldap-outpost:
+    image: ghcr.io/goauthentik/ldap:${AUTHENTIK_TAG:-2026.8.3}
+    container_name: authentik-ldap-outpost
+    restart: unless-stopped
+    environment:
+      AUTHENTIK_HOST: http://authentik-server:9000
+      AUTHENTIK_TOKEN: ${AUTHENTIK_OUTPOST_TOKEN}
+      #AUTHENTIK_LOG_LEVEL: debug
+      AUTHENTIK_INSECURE: false
+      #POSTGRES_PASSWORD: ${PG_PASS}
+    networks:
+      - authentik
+      - proxy_web
+    labels:
+      - "traefik.enable=true"
+      # Secure LDAPS Router
+      - "traefik.tcp.routers.authentik-ldaps.entrypoints=ldaps"
+      - "traefik.tcp.routers.authentik-ldaps.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.authentik-ldaps.tls=true"
+      - "traefik.tcp.routers.authentik-ldaps.tls.passthrough=true"
+      - "traefik.tcp.routers.authentik-ldaps.service=authentik-ldaps-svc"
+      - "traefik.tcp.routers.authentik-ldaps.middlewares=trusted-ldap@file"
+      - "traefik.tcp.services.authentik-ldaps-svc.loadbalancer.server.port=6636"
+            # Network specification
+      - "traefik.docker.network=proxy_web"
+
+networks:
+  authentik:
+  proxy_web:
+    external: true

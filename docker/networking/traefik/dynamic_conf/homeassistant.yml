@@ -10,5 +10,9 @@ http:
   services:
     homeassistant-svc:
       loadBalancer:
+        serversTransport: "trust-ha-ca"
         servers:
           - url: '{{ env "HOMEASSISTANT_IP" }}'
+  serversTransports:
+    trust-ha-ca:
+      insecureSkipVerify: true

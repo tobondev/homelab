@@ -5,11 +5,18 @@ http:
         sourceRange:
           - '{{ env "LAN_VLAN" }}'
           - '{{ env "CLOUDFLARE_TUNNEL" }}'
+    trusted-services:
+      ipAllowList:
+        sourceRange:
+          - '{{ env "LAN_VLAN" }}'
+          - '{{ env "CLOUDFLARE_TUNNEL" }}'
+          - '{{ env "JELLYFIN" }}'
     tv-only:
       ipAllowList:
         sourceRange:
           - '{{ env "TV_VLAN" }}'
           - '{{ env "LAN_VLAN" }}'
+          - '{{ env "CLOUDFLARE_TUNNEL" }}'
     ad-only:
       ipAllowList:
         sourceRange:
@@ -18,3 +25,11 @@ http:
       ipAllowList:
         sourceRange:
           - '{{ env "IOT_VLAN" }}'
+tcp:
+  middlewares:
+    trusted-ldap:
+      ipAllowList:
+        sourceRange:
+          - '{{ env "LAN_VLAN" }}'
+          - '{{ env "JELLYFIN" }}'
+          - '{{ env "CLOUDFLARE_TUNNEL" }}'

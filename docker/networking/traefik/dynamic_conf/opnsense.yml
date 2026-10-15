@@ -1,0 +1,21 @@
+http:
+  routers:
+    opnsense:
+      rule: 'Host(`opnsense.{{ env "DOMAIN" }}`)'
+      entryPoints:
+        - "websecure"
+      service: "opnsense-svc"
+      middlewares:
+      - "authentik"
+      - "trusted-only"
+      tls: {}
+
+  services:
+    opnsense-svc:
+      loadBalancer:
+        serversTransport: "trust-opn-ca"
+        servers:
+          - url: '{{ env "OPNSENSE_IP" }}'
+  serversTransports:
+    trust-opn-ca:
+      insecureSkipVerify: true

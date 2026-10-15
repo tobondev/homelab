@@ -30,12 +30,6 @@ http:
           - url: '{{ env "LAB_COCKPIT_IP" }}'
   serversTransports:
     trust-server-ca:
-      serverName: "127.0.0.1"
-      rootCAs:
-        -"/certs/server_cockpit-cert.crt"
       insecureSkipVerify: true
     trust-lab-ca:
-      serverName: "127.0.0.1"
-      rootCAs:
-        -"/certs/lab_cockpit-cert.crt"
       insecureSkipVerify: true

@@ -12,12 +12,9 @@ http:
   services:
     nanokvm-svc:
       loadBalancer:
-        serversTransport: "trust-custom-ca"
+        serversTransport: "trust-kvm-ca"
         servers:
           - url: '{{ env "NANOKVM_IP" }}'
   serversTransports:
-    trust-custom-ca:
-      serverName: "localhost"
-      rootCAs:
-        -"/certs/nano-kvm-cert.crt"
+    trust-kvm-ca:
       insecureSkipVerify: true
