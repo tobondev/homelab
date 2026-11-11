@@ -1,0 +1,113 @@
+services:
+  nextcloud:
+    image: nextcloud
+    container_name: nextcloud
+    restart: always
+    networks:
+      - nextcloud
+      - proxy_web
+    depends_on:
+      - nextclouddb
+      - redis
+    labels:
+      # Tell Traefik to expose this container
+      - "traefik.enable=true"
+      # Route configuration
+      - "traefik.http.routers.nextcloud.rule=Host(`nextcloud.${DOMAIN}`)"
+      - "traefik.http.routers.nextcloud.entrypoints=websecure"
+      # SSL/TLS configuration telling Let's Encrypt to secure it
+      - "traefik.http.routers.nextcloud.tls=true"
+#      - "traefik.http.routers.nextcloud.middlewares=trusted-only@file"
+      # CalDAV and CardDAV Auto-Discovery Middleware (Crucial for Nextcloud)
+      - "traefik.http.routers.nextcloud.middlewares=nextcloud-dav"
+      - "traefik.http.middlewares.nextcloud-dav.redirectregex.regex=^/.well-known/(card|cal)dav"
+      - "traefik.http.middlewares.nextcloud-dav.redirectregex.replacement=/remote.php/dav/"
+      - "traefik.http.middlewares.nextcloud-dav.redirectregex.permanent=true"
+      - "traefik.http.routers.nextcloud.tls.certresolver=letsencrypt"
+      # Network specification
+      - "traefik.docker.network=proxy_web"
+    volumes:
+      - ${NEXTCLOUD_DATA}:/var/www/html
+      - ${NEXTCLOUD_CONFIG}:/var/www/nextcloud
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_HOST=nextclouddb
+      - REDIS_HOST=redis
+      - PHP_MEMORY_LIMIT=2048M
+      - OVERWRITEHOST=nextcloud.${DOMAIN}
+#      - OVERWRITEPROTOCOL=https
+#      - OVERWRITECLIURL=https://nextcloud.${DOMAIN}
+  nextclouddb:
+    image: mariadb
+    container_name: nextcloud-db
+    restart: always
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW --innodb-buffer-pool-size=2G --innodb-log-file-size=512M
+    networks:
+      - nextcloud
+    volumes:
+      - ${NEXTCLOUD_DB}:/var/lib/mysql
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+      - MYSQL_RANDOM_ROOT_PASSWORD=true
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=nextcloud
+      - MYSQL_USER=${MYSQL_USER}
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    volumes:
+      - ${NEXTCLOUD_DB}:/data
+    networks:
+      - nextcloud
+
+  collabora:
+    image: collabora/code:latest
+    container_name: collabora
+    restart: always
+    privileged: true #Enable Kit jail for better performance
+    environment:
+#      - DONT_GEN_SSL_CERT=true
+      - dictionaries=en_US de_DE fr_FR es_ES
+      - num_prespawn_children=4
+      - password=${COLLABORA_PASSWORD}
+      - username=${COLLABORA_USERNAME}
+      - aliasgroup1=${SAN_DOMAIN},https://nextcloud.${DOMAIN}:443
+      - server_name=collabora.${DOMAIN}
+      - "extra_params=--o:ssl.enable=false --o:ssl.termination=true --o:logging.level=debug --o:user_interface.mode=compact --o:net.frame_ancestors=*"
+      - VIRTUAL_HOST=collabora.${DOMAIN}
+      - DONT_GEN_SSL_CERT=true
+
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.collabora.rule=Host(`collabora.${DOMAIN}`)"
+      - "traefik.http.routers.collabora.entrypoints=websecure"
+      #- "traefik.http.routers.collabora.service=collabora"
+      - "traefik.http.routers.collabora.tls=true"
+      - "traefik.http.routers.collabora.tls.certresolver=letsencrypt"
+      # Network specification
+      - "traefik.docker.network=proxy_web"
+      # Custom Headers
+
+      - "traefik.http.middlewares.collabora-headers.headers.customrequestheaders.Upgrade=websocket"
+      - "traefik.http.middlewares.collabora-headers.headers.customrequestheaders.Connection=Upgrade"
+      - "traefik.http.routers.collabora.middlewares=collabora-headers"
+    cap_add:
+      - MKNOD
+
+    depends_on:
+      - nextcloud
+    networks:
+      - nextcloud
+      - proxy_web
+networks:
+  nextcloud:
+  proxy_web:
+    external: true
