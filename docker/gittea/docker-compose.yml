@@ -1,0 +1,70 @@
+networks:
+  gitea:
+  proxy_web:
+    external: true
+services:
+  server:
+    image: docker.gitea.com/gitea:28.3.0-rootless
+    restart: always
+    environment:
+      - USER_UID=${PUID}
+      - USER_GID=${PGID}
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=db:5432
+      - GITEA__database__NAME=gitea
+      - GITEA__database__USER=gitea
+      - GITEA__database__PASSWD=${POSTGRES_PASSWORD}
+      - GITEA__mailer__ENABLED=true
+      - GITEA__mailer__PROTOCOL=SMTP
+      - GITEA__mailer__SMTP_ADDR=${SMTP_ADDRESS}
+      - GITEA__mailer__SMTP_PORT=${SMTP_PORT}
+      - GITEA__mailer__FROM=${GITEA_EMAIL}
+      - GITEA__mailer__USER=${GITEA_EMAIL}
+      - GITEA__mailer__EMAIL=${GITEA_EMAIL_PASSWORD}
+      - GITEA__service__ENABLE_BASIC_AUTHENTICATION=false
+      - GITEA__service__ENABLE_PASSWORD_SIGNIN_FORM=false
+      - GITEA__service__DISABLE_REGISTRATION=true
+      - GITEA__oauth2_client__USERNAME=nickname
+      - GITEA__oauth2_client__ACCOUNT_LINKING=login
+      - GITEA__oauth2_client__ENABLE_AUTO_REGISTRATION=true
+
+    volumes:
+      - ${GITEA_DATA}:/var/lib/gitea
+      - ${GITEA_CONFIG}:/etc/gitea
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    labels:
+      # Tell Traefik to expose this container
+      - "traefik.enable=true"
+      # Route configuration
+      - "traefik.http.routers.gitea.rule=Host(`gitea.${DOMAIN}`)"
+      - "traefik.http.routers.gitea.entrypoints=websecure"
+      # SSL/TLS configuration telling Let's Encrypt to secure it
+      - "traefik.http.routers.gitea.tls=true"
+      - "traefik.http.routers.gitea.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.gitea.middlewares=trusted-only@file"
+      - "traefik.http.services.gitea.loadBalancer.server.port=3000"
+      # Secure SSH Router
+      - "traefik.tcp.routers.gitea-ssh.entrypoints=ssh"
+      - "traefik.tcp.routers.gitea-ssh.service=gitea-ssh-svc"
+      - "traefik.tcp.routers.gitea-ssh.middlewares=trusted-ssh@file"
+      - "traefik.tcp.services.gitea-ssh-svc.loadbalancer.server.port=2222"
+      # Network specification
+      - "traefik.docker.network=proxy_web"
+    networks:
+      - proxy_web
+      - gitea
+    depends_on:
+      - db
+
+  db:
+    image: docker.io/library/postgres:latest
+    restart: always
+    environment:
+      - POSTGRES_USER=gitea
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=gitea
+    networks:
+      - gitea
+    volumes:
+      - ./postgres:/var/lib/postgresql

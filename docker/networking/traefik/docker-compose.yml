@@ -42,6 +42,7 @@ services:
       - "${HTTRAEFIK}:80"
       - "${HTTRAEFIKS}:443"
       - "${LDTRAEFIKS}:636"
+      - "${SSHTRAEFIKS}:2222"
       - "${ALLOY_PORT}:5140/udp"
       - "${ALLOY_SYSLOG}:5141/udp"
       - "${LOKI_PORT}:3100"
@@ -51,7 +52,7 @@ services:
       - "${DYNAMIC_CONF}:/dynamic_conf:ro"
       - "${CERTS}:/certs:ro"
       - "${TRAEFIK_YML}:/etc/traefik/traefik.yml:ro"
-    restart: unless-stopped
+    restart: always
     depends_on:
       - dockerproxy
     networks:
@@ -60,7 +61,7 @@ services:
   certs-dumper:
     image: ldez/traefik-certs-dumper:latest
     container_name: traefik-certs-dumper
-    restart: unless-stopped
+    restart: always
     command: >
       file --watch --version v2
       --source /letsencrypt/acme.json

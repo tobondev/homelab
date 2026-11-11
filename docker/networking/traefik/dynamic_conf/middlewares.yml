@@ -38,3 +38,8 @@ tcp:
           - '{{ env "LAN_VLAN" }}'
           - '{{ env "JELLYFIN" }}'
           - '{{ env "CLOUDFLARE_TUNNEL" }}'
+    gittea-ssh:
+      ipAllowList:
+        sourceRange:
+          - '{{ env "LAN_VLAN" }}'
+          - '{{ env "CLOUDFLARE_TUNNEL" }}'
