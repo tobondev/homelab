@@ -54,7 +54,7 @@ entryPoints:
         # allowEncodedHash: true
   ldaps:
     address: ":636"
-  ssh::
+  ssh:
     address: ":2222"
   alloy-port:
     address: ":5140/udp"
