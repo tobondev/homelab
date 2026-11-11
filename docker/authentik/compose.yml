@@ -1,8 +1,6 @@
 services:
   postgresql:
     container_name: authentik-postgresql
-    env_file:
-    - .env
     environment:
       POSTGRES_DB: ${PG_DB:-authentik}
       POSTGRES_PASSWORD: ${PG_PASS:?database password required}
@@ -27,8 +25,6 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
-    env_file:
-    - .env
     environment:
      - AUTHENTIK_POSTGRESQL__HOST=postgresql
      - AUTHENTIK_POSTGRESQL__NAME=${PG_DB}
@@ -64,14 +60,28 @@ services:
     depends_on:
       postgresql:
         condition: service_healthy
-    env_file:
-    - .env
     environment:
      - AUTHENTIK_POSTGRESQL__HOST=postgresql
      - AUTHENTIK_POSTGRESQL__NAME=${PG_DB}
      - AUTHENTIK_POSTGRESQL__PASSWORD=${PG_PASS}
      - AUTHENTIK_POSTGRESQL__USER=${PG_USER}
      - AUTHENTIK_SECRET_KEY=${AUTHENTIK_SECRET_KEY}
+         # SMTP server hostname
+     - AUTHENTIK_EMAIL__HOST=${AUTHENTIK_EMAIL__HOST}
+    # Port (587 is standard for STARTTLS, 465 for SSL)
+     - AUTHENTIK_EMAIL__PORT=${AUTHENTIK_EMAIL__PORT}
+    # The email address or username
+     - AUTHENTIK_EMAIL__USERNAME=${AUTHENTIK_EMAIL__USERNAME}
+    # Your App Password or SMTP API key (No quotation marks needed)
+     - AUTHENTIK_EMAIL__PASSWORD=${AUTHENTIK_EMAIL__PASSWORD}
+    # STARTTLS / explicit TLS. Use this for port 587.
+     - AUTHENTIK_EMAIL__USE_TLS=${AUTHENTIK_EMAIL__USE_TLS}
+    # Implicit TLS/SSL. Use this for port 465.
+     - AUTHENTIK_EMAIL__USE_SSL=${AUTHENTIK_EMAIL__USE_SSL}
+    # The address your users will see as the sender
+     - AUTHENTIK_EMAIL__FROM=${AUTHENTIK_EMAIL__FROM}
+    # Optional: Connection timeout in seconds
+     - AUTHENTIK_EMAIL__TIMEOUT=${AUTHENTIK_EMAIL__TIMEOUT}
     image: ${AUTHENTIK_IMAGE:-ghcr.io/goauthentik/server}:${AUTHENTIK_TAG:-2026.8.3}
     restart: unless-stopped
     shm_size: 512mb

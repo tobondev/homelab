@@ -51,6 +51,7 @@ loki.source.journal "read" {
   ]
   relabel_rules = loki.relabel.journal.rules
   labels = {
-    "job" = "integrations/node_exporter",
+    "job" = "systemd-journal",
+    "env" = "{{ ansible_hostname }}"
   }
 }

@@ -160,20 +160,64 @@ forward_to = [loki.write.local_loki.receiver]
 // 5. BASIC HOST METRICS
 // ==========================================
 
-// By bind mounting /proc and /sys in docker-compose.yml,
-// we can scrape our host's hardware metrics.
 prometheus.exporter.unix "host_system" {
-  procfs_path = "/proc"
-  sysfs_path  = "/sys"
+  procfs_path = "/host/proc"
+  sysfs_path  = "/host/sys"
+  rootfs_path = "/host/root"
 }
 
-// Scrape the unix exporter and forward to Prometheus
 prometheus.scrape "host_metrics" {
   targets    = prometheus.exporter.unix.host_system.targets
   forward_to = [prometheus.remote_write.local_prometheus.receiver]
 }
+
 // ==========================================
-// 6. DOCKER METRICS
+// 6. SYSLOG
+// ==========================================
+
+loki.relabel "journal" {
+  forward_to = [
+    loki.write.local_loki.receiver,
+  ]
+
+  rule {
+    target_label = "job"
+    replacement  = "systemd-journal"
+  }
+  rule {
+    target_label = "env"
+    replacement  = "wolf-serv"
+  }
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+  rule {
+    source_labels = ["__journal__boot_id"]
+    target_label  = "boot_id"
+  }
+  rule {
+    source_labels = ["__journal__transport"]
+    target_label  = "transport"
+  }
+  rule {
+    source_labels = ["__journal_priority_keyword"]
+    target_label  = "level"
+  }
+  rule {
+    source_labels = ["__journal__hostname"]
+    target_label  = "instance"
+  }
+}
+
+loki.source.journal "read" {
+  forward_to = [
+    loki.relabel.journal.receiver,
+  ]
+}
+
+// ==========================================
+// 7. DOCKER METRICS
 // ==========================================
 
 // Discover all running Docker containers
@@ -201,7 +245,7 @@ discovery.relabel "container_names" {
 }
 
 // ==========================================
-// 7. DOCKER LOGS
+// 8. DOCKER LOGS
 // ==========================================
 
 loki.source.docker "docker_logs" {
@@ -213,7 +257,7 @@ loki.source.docker "docker_logs" {
 }
 
 // ==========================================
-// 8. NGINX LOGS
+// 9. NGINX LOGS
 // ==========================================
 
 loki.process "nginx_router" {

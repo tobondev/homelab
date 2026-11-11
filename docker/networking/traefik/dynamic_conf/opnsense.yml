@@ -6,8 +6,8 @@ http:
         - "websecure"
       service: "opnsense-svc"
       middlewares:
-      - "authentik"
       - "trusted-only"
+      - "authentik"
       tls: {}
 
   services:

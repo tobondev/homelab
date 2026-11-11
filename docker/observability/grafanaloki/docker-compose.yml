@@ -1,15 +1,27 @@
 networks:
   observability: # Named to encompass the whole stack.
-
+  proxy_web:
+    external: true
 services:
   loki:
     image: grafana/loki:latest
     container_name: loki
     command: -config.file=/etc/loki/loki-config.yml
-    ports:
-      - "${LOKI_PORT:-3100}:3100"
+    labels:
+      - traefik.enable=true
+      # -- Traefik Services
+      - traefik.http.services.loki.loadbalancer.server.port=3100
+      # -- Traefik Routers
+      - traefik.http.routers.loki.rule=Host(`loki.${DOMAIN}`)
+      - traefik.http.routers.loki.tls=true
+      - traefik.http.routers.loki.entrypoints=websecure
+      - traefik.http.routers.loki.tls.certresolver=letsencrypt
+      - traefik.http.routers.loki.service=loki
+#    ports:
+#      - "${LOKI_PORT}:3100"
     networks:
       - observability
+      - proxy_web
     volumes:
       - "${LOKI_CONFIG_FILE}:/etc/loki/loki-config.yml:ro"
       - "${LOKI_DATA}:/loki"
@@ -24,10 +36,21 @@ services:
       - '--storage.tsdb.retention.time=7d'
       - '--storage.tsdb.retention.size=2GB'
       - '--web.enable-remote-write-receiver'
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
+    labels:
+      - traefik.enable=true
+      # -- Traefik Services
+      - traefik.http.services.prometheus.loadbalancer.server.port=9090
+      # -- Traefik Routers
+      - traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN}`)
+      - traefik.http.routers.prometheus.tls=true
+      - traefik.http.routers.prometheus.entrypoints=websecure
+      - traefik.http.routers.prometheus.tls.certresolver=letsencrypt
+      - traefik.http.routers.prometheus.service=prometheus
+#    ports:
+#      - "${PROMETHEUS_PORT:-9090}:9090"
     networks:
       - observability
+      - proxy_web
     volumes:
       - "${PROMETHEUS_CONFIG_FILE}:/etc/prometheus/prometheus.yml:ro"
       - "${PROMETHEUS_DATA}:/prometheus"
@@ -37,10 +60,22 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     user: "472"
-    ports:
-      - "${GRAFANA_PORT:-3000}:3000"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy_web
+      - traefik.http.services.grafana.loadBalancer.server.port=3000
+      - traefik.http.routers.grafana.service=grafana
+      - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)
+      - traefik.http.routers.grafana.entrypoints=websecure
+      - traefik.http.routers.grafana.tls=true
+      - traefik.http.routers.grafana.tls.certresolver=clouflare
+      - traefik.http.routers.grafana.middlewares=trusted-only@file
+    environment:
+      - GF_SERVER_ROOT_URL=${ROOT_URL}
+      - GF_SERVER_DOMAIN=grafana.${DOMAIN}
     networks:
       - observability
+      - proxy_web
     volumes:
       # Added your explicit grafana.ini file
       - "${GRAFANA_INI}:/etc/grafana/grafana.ini:ro"
@@ -55,22 +90,42 @@ services:
       - --server.http.listen-addr=0.0.0.0:12345
       - --storage.path=/var/lib/alloy/data
       - /etc/alloy/config.alloy
-    ports:
-      - "${ALLOY_PORT:-12345}:12345"
-      - "${ALLOY_LISTEN_PORT:-5140}:5140/udp"
-      - "${ALLOY_SURICATA_PORT:-5141}:5141/udp"
+    environment:
+      - DOCKER_HOST=tcp://dockerproxy:2375
+    labels:
+      - traefik.enable=true
+      # -- Traefik Services
+      - traefik.http.services.alloy.loadbalancer.server.port=12345
+      - traefik.http.services.alloy.loadbalancer.server.scheme=http
+      # -- Traefik Routers
+      - traefik.http.routers.alloy.rule=Host(`alloy.${DOMAIN}`)
+      - traefik.http.routers.alloy.entrypoints=websecure
+      - traefik.http.routers.alloy.tls=true
+      - traefik.http.routers.alloy.tls.certresolver=letsencrypt
+      - traefik.http.routers.alloy.service=alloy
+       # --- 3. Alloy Port (UDP 5140) ---
+      - "traefik.udp.routers.alloy-port-router.entrypoints=alloy-port"
+      - "traefik.udp.routers.alloy-port-router.service=alloy-port-svc"
+      - "traefik.udp.services.alloy-port-svc.loadbalancer.server.port=5140"
+       # --- 3. Optional Syslog UDP Router (UDP 5141) ---
+      - "traefik.udp.routers.alloy-syslog-router.entrypoints=alloy-syslog"
+      - "traefik.udp.routers.alloy-syslog-router.service=alloy-syslog-svc"
+      - "traefik.udp.services.alloy-syslog-svc.loadbalancer.server.port=5141"
+
     networks:
       - observability
+      - proxy_web
     group_add:
       - "${ADM_GRP}"
     volumes:
       - "${ALLOY_CONFIG_FILE}:/etc/alloy/config.alloy:ro"
       - "${ALLOY_GEOIP_DB}:/etc/alloy/GeoLite2-City.mmdb:ro"
       - "${ALLOY_DATA}:/var/lib/alloy/data"
-      - /:/rootfs:ro
-      - /sys:/sys:ro
-      - /proc:/proc:ro
-      - /var/log:/var/log:ro
+      - /var/log/journal:/var/log/journal:ro
+      - /etc/machine-id:/etc/machine-id:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host/root:ro
     restart: always
   dockerproxy:
     image: tecnativa/docker-socket-proxy:latest
@@ -85,8 +140,6 @@ services:
       - POST=0
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    ports:
-      -"${SOCKETPROXY}:2375"
     networks:
       - observability
     restart: always

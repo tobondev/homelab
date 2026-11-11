@@ -1,7 +1,7 @@
 http:
   routers:
     meshcommander:
-      rule: 'Host(`meshcommander.{{ env "DOMAIN" }}`)'
+      rule: 'Host(`mshcmdr.{{ env "DOMAIN" }}`)'
       entryPoints:
         - websecure
       service: "meshcommander-svc"

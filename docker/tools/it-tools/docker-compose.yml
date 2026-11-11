@@ -4,8 +4,8 @@ networks:
     external: true
 services:
   ittools:
-    container_name: ittools
-    image: corentinth/ittools:latest
+    container_name: it-tools
+    image: corentinth/it-tools:latest
     labels:
       # Tell Traefik to expose this container
       - "traefik.enable=true"

@@ -25,6 +25,11 @@ http:
       ipAllowList:
         sourceRange:
           - '{{ env "IOT_VLAN" }}'
+
+  serversTransports:
+    wazuhTransport:
+      insecureSkipVerify: true
+
 tcp:
   middlewares:
     trusted-ldap:

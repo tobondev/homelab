@@ -11,24 +11,6 @@ services:
   traefik:
     image: traefik:latest
     container_name: traefik
-    command:
-      - "--log.level=DEBUG"
-      - "--api.dashboard=true"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.endpoint=tcp://dockerproxy:2375"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.ldaps.address=:636"
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.provider=cloudflare"
-      - "--certificatesresolvers.letsencrypt.acme.dnschallenge.resolvers=1.1.1.1:53,1.0.0.1:53"
-      - "--certificatesresolvers.letsencrypt.acme.email=${EMAIL}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-      - "--providers.file.directory=/dynamic_conf"
-      - "--providers.file.watch=true"
-
-    # MOVED: Environment variables are now properly assigned to Traefik
     environment:
       - CF_DNS_API_TOKEN
       - DOMAIN=${DOMAIN}
@@ -45,11 +27,8 @@ services:
       - OWNCLOUD_IP=${OWNCLOUD_IP}
       - SERVER_COCKPIT_IP=${SERVER_COCKPIT_IP}
       - LAB_COCKPIT_IP=${LAB_COCKPIT_IP}
-
-    # MOVED: Wildcard definitions moved to their correct labels block
     labels:
       - "traefik.enable=true"
-      # We attach the wildcard request to the Traefik dashboard router itself as the "core" app
       - "traefik.http.routers.traefik-dash.rule=Host(`traefik.${DOMAIN}`)"
       - "traefik.http.routers.traefik-dash.service=api@internal"
       - "traefik.http.routers.traefik-dash.entrypoints=websecure"
@@ -63,10 +42,15 @@ services:
       - "${HTTRAEFIK}:80"
       - "${HTTRAEFIKS}:443"
       - "${LDTRAEFIKS}:636"
+      - "${ALLOY_PORT}:5140/udp"
+      - "${ALLOY_SYSLOG}:5141/udp"
+      - "${LOKI_PORT}:3100"
+      - "${PROMETHEUS_PORT}:9099"
     volumes:
       - "${TRAEFIK_LESTENCRYPT}:/letsencrypt"
       - "${DYNAMIC_CONF}:/dynamic_conf:ro"
       - "${CERTS}:/certs:ro"
+      - "${TRAEFIK_YML}:/etc/traefik/traefik.yml:ro"
     restart: unless-stopped
     depends_on:
       - dockerproxy
@@ -84,6 +68,7 @@ services:
       --domain-subdir
       --crt-name fullchain --crt-ext .pem
       --key-name privkey --key-ext .pem
+      -- post-hook "chown -R 1000:1000 /certs"
     environment:
       - "DOMAIN=${DOMAIN}"
       - "OVERRIDE_UID=${UID}"
@@ -94,9 +79,8 @@ services:
 
   dockerproxy:
     image: tecnativa/docker-socket-proxy:latest
-    container_name: seconddockerproxy
+    container_name: traefik-docker-proxy
     environment:
-      # Removed the misplaced variables from here
       - CONTAINERS=1
       - IMAGES=1
       - INFO=1

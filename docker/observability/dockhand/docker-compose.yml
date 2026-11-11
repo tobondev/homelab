@@ -1,0 +1,31 @@
+networks:
+  dockhand:
+  proxy_web:
+    external: true
+services:
+  dockhand:
+    environment:
+      - DISABLE_LOCAL_LOGIN=true
+    labels:
+      # Tell Traefik to expose this container
+      - "traefik.enable=true"
+      # Route configuration
+      - "traefik.http.routers.dockhand.rule=Host(`dockhand.$DOMAIN`)"
+      - "traefik.http.routers.dockhand.entrypoints=websecure"
+      # SSL/TLS configuration telling Let's Encrypt to secure it
+      - "traefik.http.routers.dockhand.tls=true"
+      - "traefik.http.routers.dockhand.middlewares=trusted-only@file"
+      - "traefik.http.routers.dockhand.tls.certresolver=letsencrypt"
+      # Network specification
+      - "traefik.docker.network=proxy_web"
+    networks:
+      - proxy_web
+      - dockhand
+    image: fnsys/dockhand:latest
+    container_name: dockhand
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - dockhand_data:/app/data
+volumes:
+  dockhand_data:
