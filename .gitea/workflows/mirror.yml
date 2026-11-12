@@ -1,0 +1,19 @@
+name: Mirror to GitHub
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  push-to-mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to GitHub
+        run: |
+          git remote add github https://tobondev:${{ secrets.PAT_FOR_GITHUB }}@github.com/tobondev/homelab.git
+          git push github main:main --force
