@@ -14,3 +14,4 @@ This log captures the significant architectural decisions for the homelab enviro
 | 008 | 2026-06-05 | [Deploy Wazuh XDR in Parallel with HIIP](adrs/adr-2026-06-06-008-deploy-wazuh-xdr-in-parallel-with-hiip.md) | Implemented|
 | 009 | 2026-08-02 | [Traefik as Reverse Proxy with DNS-01 Wildcard Certificates](adrs/adr-2026-08-02-009-traefik-as-reverse-proxy-with-dns-01-wildcard-certificates.md) | Implemented |
 | 010 | 2026-10-13 | [Authentik as Identity Provider](adrs/adr-2026-10-13-010-authentik-as-identity-provider.md) | Implemented |
+| 011 | 2026-11-11 | [Gitea as Primary Control Plane and Version Control System](adrs/adr-2026-11-11-011-gitea-as-primary-control-plane-and-version-control-system.md) | Proposed |

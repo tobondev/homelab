@@ -28,8 +28,6 @@
 
 ## 3. Implementation & Execution
 
-### Phase 1:
-
 ### Phase 1: Stack Deployment and Traefik Integration
 
 *   **Core Stack:** Deployed Nextcloud alongside MariaDB, Redis (Alpine), and Collabora CODE via a Docker Compose stack.
