@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import subprocess
+import shutil
 from pathlib import Path
 
 def get_tracked_directories():
@@ -40,7 +41,35 @@ def encrypt_to_sops(env_path, sops_path):
         print(f"Error encrypting {env_path}: {e.stderr}")
         return False
 
+def ensure_hook_script(target_dir, source_hook_path):
+    """Copies the hook script to the target directory and ensures it is executable."""
+    if not source_hook_path.is_file():
+        print(f"[WARNING] Master hook script {source_hook_path} not found. Skipping hook sync.")
+        return False
+
+    target_hook_path = target_dir / source_hook_path.name
+
+    try:
+        # To avoid unnecessary writes that update file timestamps, check if contents match
+        if target_hook_path.exists() and target_hook_path.read_text() == source_hook_path.read_text():
+            # Ensure it has executable permissions even if contents match
+            target_hook_path.chmod(target_hook_path.stat().st_mode | 0o111)
+            return False
+
+        # Copy the file (preserves metadata)
+        shutil.copy2(source_hook_path, target_hook_path)
+        # Make it executable (chmod +x)
+        target_hook_path.chmod(target_hook_path.stat().st_mode | 0o111)
+        return True
+    except Exception as e:
+        print(f"Error copying hook script to {target_dir}: {e}")
+        return False
+
 def main():
+    # Resolve the directory where this python script lives to find sops-decrypt.sh
+    script_dir = Path(__file__).resolve().parent
+    source_hook = script_dir / "sops-decrypt.sh"
+
     tracked_dirs = get_tracked_directories()
 
     if not tracked_dirs:
@@ -50,6 +79,7 @@ def main():
     updated = 0
     created = 0
     unchanged = 0
+    hooks_synced = 0
 
     # Only iterate through directories that exist in the current branch
     for d in tracked_dirs:
@@ -71,7 +101,7 @@ def main():
         else:
             sops_content = get_decrypted_sops(sops_path)
             if sops_content is None:
-                continue 
+                continue
 
             if env_content != sops_content:
                 print(f"[OUTDATED] {sops_path} differs from {env_path}. Updating...")
@@ -80,8 +110,15 @@ def main():
             else:
                 unchanged += 1
 
+        # If the directory has a .sops.env file (newly created or existing), ensure the hook is present
+        if sops_path.exists():
+            if ensure_hook_script(d, source_hook):
+                print(f"[HOOK SYNCED] Placed/Updated {source_hook.name} in {d}")
+                hooks_synced += 1
+
     print("\n--- SOPS Sync Complete ---")
     print(f"Created: {created} | Updated: {updated} | Unchanged: {unchanged}")
+    print(f"Hooks Placed/Updated: {hooks_synced}")
 
 if __name__ == "__main__":
     main()

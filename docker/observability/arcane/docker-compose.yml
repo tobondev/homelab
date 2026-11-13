@@ -1,0 +1,41 @@
+networks:
+  arcane:
+  proxy_web:
+    external: true
+services:
+  arcane:
+    image: ghcr.io/getarcaneapp/manager:latest
+    container_name: arcane
+    environment:
+      - APP_URL=http://localhost:80
+      - PUID=1000
+      - PGID=1000
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - PROJECTS_DIRECTORY=/opt/docker
+    labels:
+      # Tell Traefik to expose this container
+      - "traefik.enable=true"
+      # Route configuration
+      - "traefik.http.routers.arcane.rule=Host(`arcane.$DOMAIN`)"
+      - "traefik.http.routers.arcane.entrypoints=websecure"
+      # SSL/TLS configuration telling Let's Encrypt to secure it
+      - "traefik.http.routers.arcane.tls=true"
+      - "traefik.http.routers.arcane.middlewares=trusted-only@file"
+      - "traefik.http.routers.arcane.tls.certresolver=letsencrypt"
+      # Network specification
+      - "traefik.docker.network=proxy_web"
+    networks:
+      - proxy_web
+      - arcane
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - arcane_data:/app/data
+      - ${PROJECTS_DIRECTORY}:/opt/docker
+volumes:
+  arcane_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${ARCANE_DATA}
+      o: bind
