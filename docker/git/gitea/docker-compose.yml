@@ -1,0 +1,141 @@
+################################################################################
+#                                                                              #
+#                              GITEA DOCKER STACK                              #
+#                                                                              #
+#  Stack:   Gitea Server + PostgreSQL Database                                 #
+#                                                                              #
+################################################################################
+
+# ==============================================================================
+# SERVICES
+# ==============================================================================
+services:
+
+  # +--------------------------------------------------------------------------+
+  # |                               GITEA SERVER                               |
+  # +--------------------------------------------------------------------------+
+  server:
+    image: docker.gitea.com/gitea:28.3.0-rootless
+    container_name: gitea
+    restart: always
+    # --- Environment ----------------------------------------------------------
+    environment:
+      - USER_UID=${PUID}
+      - USER_GID=${PGID}
+      - GITEA__database__DB_TYPE=postgres
+      - GITEA__database__HOST=db:5432
+      - GITEA__database__NAME=gitea
+      - GITEA__database__USER=gitea
+      - GITEA__database__PASSWD=${POSTGRES_PASSWORD}
+      - GITEA__audit__RECORD_OUTPUT=database
+      - GITEA__mailer__ENABLED=true
+      - GITEA__mailer__PROTOCOL=SMTP
+      - GITEA__mailer__SMTP_ADDR=${SMTP_ADDRESS}
+      - GITEA__mailer__SMTP_PORT=${SMTP_PORT}
+      - GITEA__mailer__FROM=${GITEA_EMAIL}
+      - GITEA__mailer__USER=${GITEA_EMAIL}
+      - GITEA__mailer__EMAIL=${GITEA_EMAIL_PASSWORD}
+      - GITEA__server__SSH_DOMAIN=gitea.${DOMAIN}
+      - GITEA__server__SSH_PORT=2222
+      - GITEA__server__SSH_LISTEN_PORT=2222
+      - GITEA__server__DISABLE_SSH=false
+      - GITEA__server__PUBLIC_URL_DETECTION=auto
+      - GITEA__server__SSH_SERVER_USE_PROXY_PROTOCOL=true
+      - GITEA__service__ENABLE_BASIC_AUTHENTICATION=false
+      - GITEA__service__ENABLE_PASSWORD_SIGNIN_FORM=false
+      - GITEA__service__DISABLE_REGISTRATION=true
+      - GITEA__oauth2_client__USERNAME=nickname
+      - GITEA__oauth2_client__ACCOUNT_LINKING=login
+      - GITEA__oauth2_client__ENABLE_AUTO_REGISTRATION=true
+      - GITEA__actions__ENABLED=true
+    # --- Labels & Routing -----------------------------------------------------
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.gitea.rule=Host(`gitea.${DOMAIN}`)"
+      - "traefik.http.routers.gitea.entrypoints=websecure"
+      - "traefik.http.routers.gitea.tls=true"
+      - "traefik.http.routers.gitea.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.gitea.middlewares=trusted-only@file"
+      - "traefik.http.services.gitea.loadBalancer.server.port=3000"
+      # Secure SSH Router
+      - "traefik.tcp.routers.gitea-ssh.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.gitea-ssh.entrypoints=ssh"
+      - "traefik.tcp.routers.gitea-ssh.service=gitea-ssh-svc"
+      - "traefik.tcp.routers.gitea-ssh.middlewares=trusted-ssh@file"
+      - "traefik.tcp.services.gitea-ssh-svc.loadbalancer.server.port=2222"
+      - "traefik.tcp.services.gitea-ssh-svc.loadbalancer.serversTransport=proxyprotocolv2@file"
+      - "traefik.docker.network=proxy_web"
+    # --- Network --------------------------------------------------------------
+    networks:
+      - proxy_web
+      - gitea
+
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (Discovered and backed up by Arcane)
+      - "gitea_data:/var/lib/gitea"
+      - "gitea_config:/etc/gitea"
+      # Host OS Binds
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+
+    # --- Dependencies ---------------------------------------------------------
+    depends_on:
+      - db
+
+  # +--------------------------------------------------------------------------+
+  # |                           POSTGRESQL DATABASE                            |
+  # +--------------------------------------------------------------------------+
+  db:
+    image: docker.io/library/postgres:latest
+    container_name: gitea-db
+    restart: always
+    # --- Environment ----------------------------------------------------------
+    environment:
+      - POSTGRES_USER=gitea
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=gitea
+    # --- Network --------------------------------------------------------------
+    networks:
+      - gitea
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (Discovered and backed up by Arcane)
+      - "gitea_postgres:/var/lib/postgresql"
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+networks:
+  gitea:
+  proxy_web:
+    external: true
+
+
+# ==============================================================================
+# PERSISTENT VOLUMES
+# ==============================================================================
+volumes:
+  # --- Gitea Application Data -------------------------------------------------
+  gitea_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${GITEA_DATA}
+      o: bind
+
+  # --- Gitea Configuration State ----------------------------------------------
+  gitea_config:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${GITEA_CONFIG}
+      o: bind
+
+  # --- Gitea Database Storage -------------------------------------------------
+  gitea_postgres:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${GITEA_POSTGRES}
+      o: bind

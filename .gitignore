@@ -10,8 +10,7 @@ host-configs/ansible/playbooks/openwrt/keys/*
 docker/observability/grafanaloki/alloy/GeoLite2-City.mmdb
 # Filter current commit draft.
 .current-commit.draft
-<<<<<<< HEAD
-=======
-
->>>>>>> 689b555 (WIP: DO NOT PUSH)
+# Filter Syncing Files
+*s3.json
+# Filter Seaweed S3 Configuration
 *.DS_Store

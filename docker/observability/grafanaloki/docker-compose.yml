@@ -1,145 +1,245 @@
-networks:
-  observability: # Named to encompass the whole stack.
-  proxy_web:
-    external: true
+################################################################################
+#                                                                              #
+#                          GRAFANA LGAP DOCKER STACK                           #
+#                                                                              #
+#  Stack:   Loki + Prometheus + Grafana + Alloy + Docker Socket Proxy          #
+#                                                                              #
+################################################################################
+
+# ==============================================================================
+# SERVICES
+# ==============================================================================
 services:
+
+  # +--------------------------------------------------------------------------+
+  # |                            LOKI LOG INGESTION                            |
+  # +--------------------------------------------------------------------------+
   loki:
     image: grafana/loki:latest
     container_name: loki
+    restart: always
     command: -config.file=/etc/loki/loki-config.yml
+
+    # --- Labels & Routing -----------------------------------------------------
     labels:
-      - traefik.enable=true
-      # -- Traefik Services
-      - traefik.http.services.loki.loadbalancer.server.port=3100
-      # -- Traefik Routers
-      - traefik.http.routers.loki.rule=Host(`loki.${DOMAIN}`)
-      - traefik.http.routers.loki.tls=true
-      - traefik.http.routers.loki.entrypoints=websecure
-      - traefik.http.routers.loki.tls.certresolver=letsencrypt
-      - traefik.http.routers.loki.service=loki
-#    ports:
-#      - "${LOKI_PORT}:3100"
+      - "traefik.enable=true"
+      - "traefik.http.services.loki.loadbalancer.server.port=3100"
+      - "traefik.http.routers.loki.rule=Host(`loki.${DOMAIN}`)"
+      - "traefik.http.routers.loki.tls=true"
+      - "traefik.http.routers.loki.entrypoints=websecure"
+      - "traefik.http.routers.loki.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.loki.service=loki"
+
+    # --- Network --------------------------------------------------------------
     networks:
       - observability
       - proxy_web
-    volumes:
-      - "${LOKI_CONFIG_FILE}:/etc/loki/loki-config.yml:ro"
-      - "${LOKI_DATA}:/loki"
-    restart: always
 
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (Discovered and backed up by Arcane)
+      - "loki_data:/loki"
+      # Configuration (Managed strictly by Git)
+      - "${LOKI_CONFIG_FILE}:/etc/loki/loki-config.yml:ro"
+
+
+  # +--------------------------------------------------------------------------+
+  # |                        PROMETHEUS LOG COLLECTION                         |
+  # +--------------------------------------------------------------------------+
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
+    restart: always
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=7d'
       - '--storage.tsdb.retention.size=2GB'
       - '--web.enable-remote-write-receiver'
+
+    # --- Labels & Routing -----------------------------------------------------
     labels:
-      - traefik.enable=true
-      # -- Traefik Services
-      - traefik.http.services.prometheus.loadbalancer.server.port=9090
-      # -- Traefik Routers
-      - traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN}`)
-      - traefik.http.routers.prometheus.tls=true
-      - traefik.http.routers.prometheus.entrypoints=websecure
-      - traefik.http.routers.prometheus.tls.certresolver=letsencrypt
-      - traefik.http.routers.prometheus.service=prometheus
-#    ports:
-#      - "${PROMETHEUS_PORT:-9090}:9090"
+      - "traefik.enable=true"
+      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+      - "traefik.http.routers.prometheus.rule=Host(`prometheus.${DOMAIN}`)"
+      - "traefik.http.routers.prometheus.tls=true"
+      - "traefik.http.routers.prometheus.entrypoints=websecure"
+      - "traefik.http.routers.prometheus.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.prometheus.service=prometheus"
+
+    # --- Network --------------------------------------------------------------
     networks:
       - observability
       - proxy_web
-    volumes:
-      - "${PROMETHEUS_CONFIG_FILE}:/etc/prometheus/prometheus.yml:ro"
-      - "${PROMETHEUS_DATA}:/prometheus"
-    restart: always
 
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (Discovered and backed up by Arcane)
+      - "prometheus_data:/prometheus"
+      # Configuration (Managed strictly by Git)
+      - "${PROMETHEUS_CONFIG_FILE}:/etc/prometheus/prometheus.yml:ro"
+
+
+  # +--------------------------------------------------------------------------+
+  # |                             GRAFANA DASHBOARD                            |
+  # +--------------------------------------------------------------------------+
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    restart: always
     user: "472"
-    labels:
-      - traefik.enable=true
-      - traefik.docker.network=proxy_web
-      - traefik.http.services.grafana.loadBalancer.server.port=3000
-      - traefik.http.routers.grafana.service=grafana
-      - traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)
-      - traefik.http.routers.grafana.entrypoints=websecure
-      - traefik.http.routers.grafana.tls=true
-      - traefik.http.routers.grafana.tls.certresolver=clouflare
-      - traefik.http.routers.grafana.middlewares=trusted-only@file
+
+    # --- Environment ----------------------------------------------------------
     environment:
       - GF_SERVER_ROOT_URL=${ROOT_URL}
       - GF_SERVER_DOMAIN=grafana.${DOMAIN}
+
+    # --- Labels & Routing -----------------------------------------------------
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy_web"
+      - "traefik.http.services.grafana.loadBalancer.server.port=3000"
+      - "traefik.http.routers.grafana.service=grafana"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.${DOMAIN}`)"
+      - "traefik.http.routers.grafana.entrypoints=websecure"
+      - "traefik.http.routers.grafana.tls=true"
+      - "traefik.http.routers.grafana.tls.certresolver=clouflare"
+      - "traefik.http.routers.grafana.middlewares=trusted-only@file"
+
+    # --- Network --------------------------------------------------------------
     networks:
       - observability
       - proxy_web
-    volumes:
-      # Added your explicit grafana.ini file
-      - "${GRAFANA_INI}:/etc/grafana/grafana.ini:ro"
-      - "${GRAFANA_DATA}:/var/lib/grafana"
-    restart: always
 
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (Discovered and backed up by Arcane)
+      - "grafana_data:/var/lib/grafana"
+      # Configuration (Managed strictly by Git)
+      - "${GRAFANA_INI}:/etc/grafana/grafana.ini:ro"
+
+
+  # +--------------------------------------------------------------------------+
+  # |                          ALLOY TELEMETRY AGENT                           |
+  # +--------------------------------------------------------------------------+
   alloy:
     image: grafana/alloy:latest
     container_name: alloy
+    restart: always
     command:
       - run
       - --server.http.listen-addr=0.0.0.0:12345
       - --storage.path=/var/lib/alloy/data
       - /etc/alloy/config.alloy
+
+    # --- Environment & Privileges ---------------------------------------------
     environment:
       - DOCKER_HOST=tcp://dockerproxy:2375
+    group_add:
+      - "${ADM_GRP}"
+
+    # --- Labels & Routing -----------------------------------------------------
     labels:
-      - traefik.enable=true
-      # -- Traefik Services
-      - traefik.http.services.alloy.loadbalancer.server.port=12345
-      - traefik.http.services.alloy.loadbalancer.server.scheme=http
-      # -- Traefik Routers
-      - traefik.http.routers.alloy.rule=Host(`alloy.${DOMAIN}`)
-      - traefik.http.routers.alloy.entrypoints=websecure
-      - traefik.http.routers.alloy.tls=true
-      - traefik.http.routers.alloy.tls.certresolver=letsencrypt
-      - traefik.http.routers.alloy.service=alloy
-       # --- 3. Alloy Port (UDP 5140) ---
+      - "traefik.enable=true"
+      - "traefik.http.services.alloy.loadbalancer.server.port=12345"
+      - "traefik.http.services.alloy.loadbalancer.server.scheme=http"
+      - "traefik.http.routers.alloy.rule=Host(`alloy.${DOMAIN}`)"
+      - "traefik.http.routers.alloy.entrypoints=websecure"
+      - "traefik.http.routers.alloy.tls=true"
+      - "traefik.http.routers.alloy.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.alloy.service=alloy"
+      # UDP Routing
       - "traefik.udp.routers.alloy-port-router.entrypoints=alloy-port"
       - "traefik.udp.routers.alloy-port-router.service=alloy-port-svc"
       - "traefik.udp.services.alloy-port-svc.loadbalancer.server.port=5140"
-       # --- 3. Optional Syslog UDP Router (UDP 5141) ---
       - "traefik.udp.routers.alloy-syslog-router.entrypoints=alloy-syslog"
       - "traefik.udp.routers.alloy-syslog-router.service=alloy-syslog-svc"
       - "traefik.udp.services.alloy-syslog-svc.loadbalancer.server.port=5141"
 
+    # --- Network --------------------------------------------------------------
     networks:
       - observability
       - proxy_web
-    group_add:
-      - "${ADM_GRP}"
+
+    # --- Volumes & Configs ----------------------------------------------------
     volumes:
+      # State (Discovered and backed up by Arcane)
+      - "alloy_data:/var/lib/alloy/data"
+      # Configuration & Host Binds (Managed strictly by Git / Host OS)
       - "${ALLOY_CONFIG_FILE}:/etc/alloy/config.alloy:ro"
       - "${ALLOY_GEOIP_DB}:/etc/alloy/GeoLite2-City.mmdb:ro"
-      - "${ALLOY_DATA}:/var/lib/alloy/data"
+      # Logs Collection | Host Bind
       - /var/log/journal:/var/log/journal:ro
       - /etc/machine-id:/etc/machine-id:ro
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
       - /:/host/root:ro
-    restart: always
+
+
+  # +--------------------------------------------------------------------------+
+  # |                               DOCKER PROXY                               |
+  # +--------------------------------------------------------------------------+
   dockerproxy:
     image: tecnativa/docker-socket-proxy:latest
     container_name: dockerproxy
+    restart: always
+
+    # --- Environment ----------------------------------------------------------
     environment:
-      # Whitelist only what Alloy needs
       - CONTAINERS=1
       - IMAGES=1
       - INFO=1
       - NETWORKS=1
-      # Explicitly deny destructive requests
       - POST=0
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    # --- Network --------------------------------------------------------------
     networks:
       - observability
-    restart: always
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+networks:
+  observability:
+    name: observability
+  proxy_web:
+    external: true
+
+# ==============================================================================
+# PERSISTENT VOLUMES
+# ==============================================================================
+volumes:
+  # --- Loki Storage -----------------------------------------------------------
+  loki_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${LOKI_DATA}
+      o: bind
+
+  # --- Prometheus Storage -----------------------------------------------------
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${PROMETHEUS_DATA}
+      o: bind
+
+  # --- Grafana Storage --------------------------------------------------------
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${GRAFANA_DATA}
+      o: bind
+
+  # --- Alloy Storage ----------------------------------------------------------
+  alloy_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${ALLOY_DATA}
+      o: bind

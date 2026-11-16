@@ -1,0 +1,184 @@
+################################################################################
+#                                                                              #
+#                            SEAWEEDFS DOCKER STACK                            #
+#                                                                              #
+#  Stack:   SeaweedFS Master + Volume + Filer + S3 Gateway + WebDAV            #
+#                                                                              #
+################################################################################
+
+
+# ==============================================================================
+# SERVICES
+# ==============================================================================
+services:
+
+  # +--------------------------------------------------------------------------+
+  # |                             SEAWEEDFS MASTER                             |
+  # +--------------------------------------------------------------------------+
+  master:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweed-master
+    restart: unless-stopped
+    command: "master -ip=master -ip.bind=0.0.0.0 -metricsPort=9324"
+    # --- Labels & Routing -----------------------------------------------------
+    labels:
+      - "traefik.enable=true"
+      # Master Dashboard UI (Protected by Authentik)
+      - "traefik.http.routers.seaweed-master.rule=Host(`seaweed.${DOMAIN}`)"
+      - "traefik.http.routers.seaweed-master.entrypoints=websecure"
+      - "traefik.http.routers.seaweed-master.tls=true"
+      - "traefik.http.routers.seaweed-master.middlewares=authentik@file"
+      - "traefik.http.routers.seaweed-master.tls.certresolver=letsencrypt"
+      - "traefik.http.services.seaweed-master.loadbalancer.server.port=9333"
+      - "traefik.docker.network=proxy_web"
+    # --- Network --------------------------------------------------------------
+    networks:
+      - proxy_web
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (This holds topology metadata; do not back up with Arcane)
+      - "seaweed_master_data:/data"
+
+  # +--------------------------------------------------------------------------+
+  # |                             SEAWEEDFS VOLUME                             |
+  # +--------------------------------------------------------------------------+
+  volume:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweed-volume
+    restart: unless-stopped
+    command: "volume -mserver=master:9333 -ip=volume -ip.bind=0.0.0.0 -port=8080 -metricsPort=9325"
+    # --- Network --------------------------------------------------------------
+    networks:
+      - proxy_web
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (This holds your actual backups; do not back up with Arcane)
+      - "seaweed_volume_data:/data"
+    # --- Dependencies ---------------------------------------------------------
+    depends_on:
+      - master
+
+  # +--------------------------------------------------------------------------+
+  # |                             SEAWEEDFS FILER                              |
+  # +--------------------------------------------------------------------------+
+  filer:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweed-filer
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    command: "filer -master=master:9333 -ip=filer -ip.bind=0.0.0.0 -metricsPort=9326"
+    # --- Labels & Routing -----------------------------------------------------
+    labels:
+      - "traefik.enable=true"
+      # Filer Web Browser UI (Protected by Authentik)
+      - "traefik.http.routers.seaweed-filer.rule=Host(`filer.${DOMAIN}`)"
+      - "traefik.http.routers.seaweed-filer.entrypoints=websecure"
+      - "traefik.http.routers.seaweed-filer.tls=true"
+      - "traefik.http.routers.seaweed-filer.middlewares=authentik@file"
+      - "traefik.http.routers.seaweed-filer.tls.certresolver=letsencrypt"
+      - "traefik.http.services.seaweed-filer.loadbalancer.server.port=8888"
+      - "traefik.docker.network=proxy_web"
+    # --- Network --------------------------------------------------------------
+    networks:
+      - proxy_web
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (This holds namespace metadata; do not back up with Arcane)
+      - "seaweed_filer_data:/data"
+    # --- Dependencies ---------------------------------------------------------
+    depends_on:
+      - master
+      - volume
+
+  # +--------------------------------------------------------------------------+
+  # |                           SEAWEEDFS S3 GATEWAY                           |
+  # +--------------------------------------------------------------------------+
+  s3:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweed-s3
+    restart: unless-stopped
+    command: "s3 -filer=filer:8888 -ip.bind=0.0.0.0 -port=8333 -config=/etc/seaweedfs/s3.json -metricsPort=9327"
+    # --- Labels & Routing -----------------------------------------------------
+    labels:
+      - "traefik.enable=true"
+      # S3 API Endpoint (No Authentik Middleware, relies on IAM/S3 auth)
+      - "traefik.http.routers.seaweed-s3.rule=Host(`s3.${DOMAIN}`)"
+      - "traefik.http.routers.seaweed-s3.entrypoints=websecure"
+      - "traefik.http.routers.seaweed-s3.tls=true"
+      - "traefik.http.routers.seaweed-s3.tls.certresolver=letsencrypt"
+      - "traefik.http.services.seaweed-s3.loadbalancer.server.port=8333"
+      - "traefik.docker.network=proxy_web"
+    # --- Network --------------------------------------------------------------
+    networks:
+      - proxy_web
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # Configuration (Managed strictly by Git)
+      - "${SEAWEED_S3_JSON}:/etc/seaweedfs/s3.json:ro"
+    # --- Dependencies ---------------------------------------------------------
+    depends_on:
+      - filer
+
+  # +--------------------------------------------------------------------------+
+  # |                           SEAWEEDFS WEBDAV                               |
+  # +--------------------------------------------------------------------------+
+  webdav:
+    image: chrislusf/seaweedfs:latest
+    container_name: seaweed-webdav
+    restart: unless-stopped
+    command: "webdav -filer=filer:8888"
+    # --- Labels & Routing -----------------------------------------------------
+    labels:
+      - "traefik.enable=true"
+      # WebDAV API Endpoint (Protected by Authentik for remote mount access)
+      - "traefik.http.routers.seaweed-webdav.rule=Host(`webdav.${DOMAIN}`)"
+      - "traefik.http.routers.seaweed-webdav.entrypoints=websecure"
+      - "traefik.http.routers.seaweed-webdav.tls=true"
+      - "traefik.http.routers.seaweed-webdav.middlewares=authentik@file"
+      - "traefik.http.routers.seaweed-webdav.tls.certresolver=letsencrypt"
+      - "traefik.http.services.seaweed-webdav.loadbalancer.server.port=7333"
+      - "traefik.docker.network=proxy_web"
+    # --- Network --------------------------------------------------------------
+    networks:
+      - proxy_web
+    # --- Dependencies ---------------------------------------------------------
+    depends_on:
+      - filer
+
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+networks:
+  proxy_web:
+    external: true
+
+
+# ==============================================================================
+# PERSISTENT VOLUMES
+# ==============================================================================
+volumes:
+  # --- SeaweedFS Master Metadata ----------------------------------------------
+  seaweed_master_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${SEAWEED_MASTER_DATA}
+      o: bind
+
+  # --- SeaweedFS Raw Block Storage --------------------------------------------
+  seaweed_volume_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${SEAWEED_VOLUME_DATA}
+      o: bind
+
+  # --- SeaweedFS Filer Namespace ----------------------------------------------
+  seaweed_filer_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${SEAWEED_FILER_DATA}
+      o: bind

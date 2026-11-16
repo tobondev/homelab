@@ -1,16 +1,25 @@
-networks:
-  traefiknet:
-    name: traefiknet
-  proxy_web:
-    external: true
+################################################################################
+#                                                                              #
+#                             TRAEFIK DOCKER STACK                             #
+#                                                                              #
+#  Stack:   Traefik Proxy + Certs Dumper + Docker Socket Proxy                 #
+#  Usage:   docker compose up -d                                               #
+#                                                                              #
+################################################################################
 
-volumes:
-  traefik_letsencrypt:
-
+# ==============================================================================
+# SERVICES
+# ==============================================================================
 services:
+
+  # +--------------------------------------------------------------------------+
+  # |                              TRAEFIK PROXY                               |
+  # +--------------------------------------------------------------------------+
   traefik:
     image: traefik:latest
     container_name: traefik
+    restart: always
+    # --- Environment ----------------------------------------------------------
     environment:
       - CF_DNS_API_TOKEN
       - DOMAIN=${DOMAIN}
@@ -27,6 +36,7 @@ services:
       - OWNCLOUD_IP=${OWNCLOUD_IP}
       - SERVER_COCKPIT_IP=${SERVER_COCKPIT_IP}
       - LAB_COCKPIT_IP=${LAB_COCKPIT_IP}
+    # --- Labels & Routing -----------------------------------------------------
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.traefik-dash.rule=Host(`traefik.${DOMAIN}`)"
@@ -37,7 +47,7 @@ services:
       - "traefik.http.routers.traefik-dash.tls.certresolver=letsencrypt"
       - "traefik.http.routers.traefik-dash.tls.domains[0].main=${DOMAIN}"
       - "traefik.http.routers.traefik-dash.tls.domains[0].sans=*.${DOMAIN}"
-
+    # --- Network & Ports ------------------------------------------------------
     ports:
       - "${HTTRAEFIK}:80"
       - "${HTTRAEFIKS}:443"
@@ -47,17 +57,24 @@ services:
       - "${ALLOY_SYSLOG}:5141/udp"
       - "${LOKI_PORT}:3100"
       - "${PROMETHEUS_PORT}:9099"
-    volumes:
-      - "${TRAEFIK_LESTENCRYPT}:/letsencrypt"
-      - "${DYNAMIC_CONF}:/dynamic_conf:ro"
-      - "${CERTS}:/certs:ro"
-      - "${TRAEFIK_YML}:/etc/traefik/traefik.yml:ro"
-    restart: always
-    depends_on:
-      - dockerproxy
     networks:
       - traefiknet
       - proxy_web
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (Discovered and backed up by Arcane)
+      - "traefik_letsencrypt:/letsencrypt"
+      - "certs_data:/certs:ro"
+      # Configuration (Managed strictly by Git)
+      - "${DYNAMIC_CONF}:/dynamic_conf:ro"
+      - "${TRAEFIK_YML}:/etc/traefik/traefik.yml:ro"
+    # --- Dependencies ---------------------------------------------------------
+    depends_on:
+      - dockerproxy
+
+  # +--------------------------------------------------------------------------+
+  # |                               CERTS DUMPER                               |
+  # +--------------------------------------------------------------------------+
   certs-dumper:
     image: ldez/traefik-certs-dumper:latest
     container_name: traefik-certs-dumper
@@ -70,17 +87,24 @@ services:
       --crt-name fullchain --crt-ext .pem
       --key-name privkey --key-ext .pem
       -- post-hook "chown -R 1000:1000 /certs"
+    # --- Environment ----------------------------------------------------------
     environment:
       - "DOMAIN=${DOMAIN}"
       - "OVERRIDE_UID=${UID}"
       - "OVERRIDE_GID=${GID}"
+    # --- Volumes & Configs ----------------------------------------------------
     volumes:
-      - "${TRAEFIK_LESTENCRYPT}:/letsencrypt:ro"
-      - "${AUTHENTIK_CERTS}:/certs"
+      - "traefik_letsencrypt:/letsencrypt:ro"
+      - "authentik_certs:/certs"
 
+  # +--------------------------------------------------------------------------+
+  # |                               DOCKER PROXY                               |
+  # +--------------------------------------------------------------------------+
   dockerproxy:
     image: tecnativa/docker-socket-proxy:latest
     container_name: traefik-docker-proxy
+    restart: always
+    # --- Environment ----------------------------------------------------------
     environment:
       - CONTAINERS=1
       - IMAGES=1
@@ -88,8 +112,48 @@ services:
       - NETWORKS=1
       - VOLUMES=1
       - POST=0
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    restart: always
+    # --- Network --------------------------------------------------------------
     networks:
       - traefiknet
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+networks:
+  traefiknet:
+    name: traefiknet
+  proxy_web:
+    external: true
+
+
+# ==============================================================================
+# PERSISTENT VOLUMES
+# ==============================================================================
+volumes:
+  # --- LetsEncrypt Storage ----------------------------------------------------
+  traefik_letsencrypt:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${TRAEFIK_LESTENCRYPT}
+      o: bind
+
+  # --- Traefik Certificates ---------------------------------------------------
+  certs_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${CERTS}
+      o: bind
+
+  # --- Authentik Certificates -------------------------------------------------
+  authentik_certs:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${CERTS}
+      o: bind

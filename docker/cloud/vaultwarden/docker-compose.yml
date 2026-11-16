@@ -1,0 +1,64 @@
+################################################################################
+#                                                                              #
+#                           VAULTWARDEN DOCKER STACK                           #
+#                                                                              #
+#  Stack:   Vaultwarden Password Manager                                       #
+#                                                                              #
+################################################################################
+
+# ==============================================================================
+# SERVICES
+# ==============================================================================
+services:
+
+  # +--------------------------------------------------------------------------+
+  # |                               VAULTWARDEN                                |
+  # +--------------------------------------------------------------------------+
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: new-vaultwarden
+    restart: always
+    user: "1000:1000"
+    # --- Environment ----------------------------------------------------------
+    environment:
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - SIGNUPS_ALLOWED=false
+      - DOMAIN=${ENV_DOMAIN}
+    # --- Labels & Routing -----------------------------------------------------
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vaultwarden.rule=Host(`vault.${DOMAIN}`)"
+      - "traefik.http.routers.vaultwarden.entrypoints=websecure"
+      - "traefik.http.routers.vaultwarden.tls=true"
+      - "traefik.http.routers.vaultwarden.middlewares=trusted-only@file"
+      - "traefik.http.routers.vaultwarden.tls.certresolver=letsencrypt"
+      - "traefik.docker.network=proxy_web"
+    # --- Network --------------------------------------------------------------
+    networks:
+      - vaultwarden
+      - proxy_web
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (Discovered and backed up by Arcane)
+      - "vaultwarden_data:/data:rw"
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+networks:
+  vaultwarden:
+    name: vaultwarden
+  proxy_web:
+    external: true
+
+# ==============================================================================
+# PERSISTENT VOLUMES
+# ==============================================================================
+volumes:
+  # --- Vaultwarden Application Data -------------------------------------------
+  vaultwarden_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${VAULT_DATA}
+      o: bind

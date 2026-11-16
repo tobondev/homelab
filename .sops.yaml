@@ -32,3 +32,9 @@ creation_rules:
   - path_regex: secrets/ssh_keys/.*\.pub$
     age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
     enc: noop
+  # S3 JSON
+  - path_regex: \.json$
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+  - path_regex: \.sops.json$
+    age: "age1srxf8entezg03y8n550g24w4se7gm7kdzzltcxfhckq7lek93vfsu2rpnw"
+

@@ -1,0 +1,82 @@
+################################################################################
+#                                                                              #
+#                           MESHCENTRAL DOCKER STACK                           #
+#                                                                              #
+#  Stack:   MeshCentral Remote Management                                      #
+#                                                                              #
+################################################################################
+
+
+# ==============================================================================
+# SERVICES
+# ==============================================================================
+services:
+
+  # +--------------------------------------------------------------------------+
+  # |                                MESHCENTRAL                               |
+  # +--------------------------------------------------------------------------+
+  meshcentral:
+    image: ghcr.io/ylianst/meshcentral:latest
+    container_name: meshcentral
+    restart: unless-stopped
+    user: "1000:1000"
+    entrypoint: ["node", "/opt/meshcentral/meshcentral"]
+    command: ["--datapath", "/opt/meshcentral/meshcentral-data"]
+    # --- Security & Privileges ------------------------------------------------
+    security_opt:
+      - no-new-privileges:true
+    # --- Labels & Routing -----------------------------------------------------
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.meshcentral.rule=Host(`meshcentral.${DOMAIN}`)"
+      - "traefik.http.routers.meshcentral.entrypoints=websecure"
+      - "traefik.http.routers.meshcentral.tls=true"
+      - "traefik.http.routers.meshcentral.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.meshcentral.middlewares=authentik@file"
+      - "traefik.http.services.meshcentral.loadbalancer.server.port=4430"
+    # --- Network --------------------------------------------------------------
+    networks:
+      - proxy_web
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (Discovered and backed up by Arcane)
+      - "meshcentral_data:/opt/meshcentral/meshcentral-data"
+      - "meshcentral_files:/opt/meshcentral/meshcentral-files"
+      - "meshcentral_backups:/opt/meshcentral/meshcentral-backups"
+
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+networks:
+  proxy_web:
+    external: true
+
+
+# ==============================================================================
+# PERSISTENT VOLUMES
+# ==============================================================================
+volumes:
+  # --- MeshCentral Application Data -------------------------------------------
+  meshcentral_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${MESHCENTRAL_DATA}/data
+      o: bind
+
+  # --- MeshCentral User Files -------------------------------------------------
+  meshcentral_files:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${MESHCENTRAL_DATA}/files
+      o: bind
+
+  # --- MeshCentral Backups ----------------------------------------------------
+  meshcentral_backups:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${MESHCENTRAL_DATA}/backups
+      o: bind

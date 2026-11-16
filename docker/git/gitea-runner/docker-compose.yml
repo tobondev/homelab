@@ -1,0 +1,45 @@
+################################################################################
+#                                                                              #
+#                          GITEA RUNNER DOCKER STACK                           #
+#                                                                              #
+#  Stack:   Gitea Act Runner                                                   #
+#                                                                              #
+################################################################################
+
+# ==============================================================================
+# SERVICES
+# ==============================================================================
+services:
+
+  # +--------------------------------------------------------------------------+
+  # |                             GITEA ACT RUNNER                             |
+  # +--------------------------------------------------------------------------+
+  runner:
+    image: gitea/act_runner:latest
+    container_name: gitea-runner
+    restart: always
+
+    # --- Environment ----------------------------------------------------------
+    environment:
+      - GITEA_INSTANCE_URL=https://gitea.${DOMAIN}
+      - GITEA_RUNNER_REGISTRATION_TOKEN=${GITEA_RUNNER_TOKEN}
+
+    # --- Volumes & Configs ----------------------------------------------------
+    volumes:
+      # State (Discovered and backed up by Arcane)
+      - "gitea_runner_data:/data"
+      # Configuration & Host Binds (Managed strictly by Git / Host OS)
+      - /var/run/docker.sock:/var/run/docker.sock
+
+
+# ==============================================================================
+# PERSISTENT VOLUMES
+# ==============================================================================
+volumes:
+  # --- Gitea Runner Application Data ------------------------------------------
+  gitea_runner_data:
+    driver: local
+    driver_opts:
+      type: none
+      device: ${GITEA_RUNNER_DATA}
+      o: bind
